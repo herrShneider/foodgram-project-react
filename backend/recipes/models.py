@@ -160,7 +160,10 @@ class Recipe(models.Model):
         verbose_name='Название',
         max_length=NAME_MAX_LENGTH,
     )
-
+    image = models.ImageField(
+        upload_to='recipes/images/',
+        default=None,
+    )
     text = models.TextField(
         verbose_name='Описание',
         max_length=DESCRIPTION_MAX_LENGTH,
@@ -220,90 +223,38 @@ class TagRecipe(models.Model):
     def __str__(self):
         return f'{self.tag} {self.recipe}'
 
-# class Recipe(models.Model):
-#     """Класс рецептов."""
-#
-#     tags = models.ManyToManyField(
-#         Tag,
-#         related_name='recipes'
-#     )
-#     author = models.ForeignKey(
-#         User,
-#         on_delete=models.CASCADE,
-#     )
-#     ingredients = models.ManyToManyField(
-#         Ingredient,
-#         through='IngredientRecipe',
-#         related_name='recipes',
-#     )
-#     name = models.CharField(
-#         verbose_name='Название',
-#         max_length=NAME_MAX_LENGTH,
-#     )
-#     image = models.ImageField(
-#         upload_to='recipes/images/',
-#         default=None,
-#     )
-#     text = models.TextField(
-#         verbose_name='Описание',
-#         max_length=DESCRIPTION_MAX_LENGTH,
-#     )
-#     cooking_time = models.PositiveSmallIntegerField(
-#         validators=[
-#             MaxValueValidator(
-#                 COOKING_TIME_MAX_VALUE,
-#                 f'Время приготовления не может быть больше {COOKING_TIME_MAX_VALUE} минут.'
-#             )
-#         ],
-#         verbose_name='Время приготовления',
-#     )
-#     pub_date = models.DateTimeField(
-#         auto_now_add=True,
-#         verbose_name='Дата публикации',
-#     )
-#
-#     class Meta:
-#         verbose_name = 'Рецепт'
-#         verbose_name_plural = 'Рецепты'
-#         ordering = ('-pub_date',)
-#         default_related_name = 'recipes'
-#
-#     def __str__(self):
-#         return self.name[:TEXT_LIMIT]
-
 
 class FavoriteRecipe(models.Model):
     """Класс Избранных рецептов."""
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
     )
-    favorite_recipe = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite_recipes'
     )
 
     class Meta:
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
+        default_related_name = 'favorite_recipes'
 
 
 class ShoppingCart(models.Model):
     """Класс Списка покупок."""
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
     )
-    shopping_cart = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='shopping_carts'
     )
 
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-
+        default_related_name = 'shopping_carts'

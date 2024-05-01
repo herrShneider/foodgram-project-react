@@ -1,4 +1,4 @@
-from datetime import timedelta
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -91,8 +91,11 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTH_USER_MODEL = 'recipes.User'
 
@@ -107,18 +110,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    # 'DEFAULT_AUTHENTICATION_CLASSES': [
-    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
-    # ],
 }
 
 # DJOSER = {
 #     'SERIALIZERS': {
 #         'user_create': 'api.UserCreateSerializer',  # Напишите свой сериализатор
 #     },
-# }
-
-# SIMPLE_JWT = {
-#    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-#    'AUTH_HEADER_TYPES': ('Bearer',),
 # }

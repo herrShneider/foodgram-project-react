@@ -9,7 +9,7 @@ from recipes.models import Ingredient, Tag, Recipe
 csv_files = [
     'ingredients.csv',
     'tags.csv',
-    'recipes.csv',
+    # 'recipes.csv',
 ]
 
 csv_fields = {
