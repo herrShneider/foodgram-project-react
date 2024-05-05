@@ -32,3 +32,16 @@ def validate_not_me(username):
 def validate_hex_color(value):
     if not re.match(TAG_COLOR_VALID_PATTERN, value):
         raise ValidationError('Введите действительный шестнадцатеричный код цвета.')
+
+
+# def validate_ingredients(ingredients):
+#     print(ingredients)
+#     print('KUKUKUKU')
+#     print(type(ingredients))
+#     if True:
+#         raise ValidationError(
+#             f'Использовать имя  в '
+#             f'качестве username запрещено.'
+#         )
+#
+#     return ingredients

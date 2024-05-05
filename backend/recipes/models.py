@@ -79,12 +79,12 @@ class Subscription(models.Model):
     subscriber = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='user_as_subscriber'
+        related_name='subscription_as_subscriber'
     )
     subscription = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='user_subscribed_to'
+        related_name='subscription_subscribed_to'
     )
 
 
@@ -224,24 +224,6 @@ class TagRecipe(models.Model):
         return f'{self.tag} {self.recipe}'
 
 
-class FavoriteRecipe(models.Model):
-    """Класс Избранных рецептов."""
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
-        default_related_name = 'favorite_recipes'
-
-
 class ShoppingCart(models.Model):
     """Класс Списка покупок."""
 
@@ -258,3 +240,21 @@ class ShoppingCart(models.Model):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
         default_related_name = 'shopping_carts'
+
+
+class FavoriteRecipe(models.Model):
+    """Класс Избранных рецептов."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Избранный рецепт'
+        verbose_name_plural = 'Избранные рецепты'
+        default_related_name = 'favorite_recipes'
