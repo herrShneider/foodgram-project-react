@@ -1,15 +1,14 @@
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.password_validation import validate_password
-from django.core.validators import MaxValueValidator
 from django.db import models
 
-from config import (COOKING_TIME_MAX_VALUE, DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH,
+from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH,
                     LAST_NAME_LENGTH, NAME_MAX_LENGTH,
                     PASSWORD_LENGTH, SLUG_MAX_LENGTH,
                     TAG_COLOR_MAX_LENGTH, TEXT_LIMIT, USERNAME_LENGTH)
 
-from recipes.validators import validate_hex_color, validate_not_me, validate_username_via_regex
+from recipes.validators import (validate_amount, validate_cooking_time,
+                                validate_hex_color, validate_image,
+                                validate_not_me, validate_username_via_regex)
 
 
 class User(AbstractUser):
@@ -24,28 +23,33 @@ class User(AbstractUser):
 
     email = models.EmailField(
         max_length=EMAIL_FIELD_LENGTH,
-        unique=True
+        unique=True,
+        verbose_name='Электронная почта',
     )
     username = models.CharField(
         max_length=USERNAME_LENGTH,
         unique=True,
         validators=(validate_not_me, validate_username_via_regex),
+        verbose_name='Никнэйм',
     )
     first_name = models.CharField(
         max_length=FIRST_NAME_LENGTH,
+        verbose_name='Имя',
     )
     last_name = models.CharField(
         max_length=LAST_NAME_LENGTH,
+        verbose_name='Фамилия',
     )
     password = models.CharField(
         max_length=PASSWORD_LENGTH,
+        verbose_name='Пароль',
     )
     role = models.CharField(
-        'Пользовательская роль',
         max_length=max(len(role) for role, _ in CHOICES),
         choices=CHOICES,
         default=USER,
         blank=True,
+        verbose_name='Пользовательская роль',
     )
 
     USERNAME_FIELD = 'email'
@@ -68,7 +72,8 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         if self.password:
-            # validate_password(self.password, user=self)  # проходит 500 ошибка а не 400
+            # validate_password(self.password, user=self)
+            # проходит 500 ошибка а не 400
             self.set_password(self.password)
         super().save(*args, **kwargs)
 
@@ -79,12 +84,14 @@ class Subscription(models.Model):
     subscriber = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscription_as_subscriber'
+        related_name='subscription_as_subscriber',
+        verbose_name='Подписчик',
     )
     subscription = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscription_subscribed_to'
+        related_name='subscription_subscribed_to',
+        verbose_name='Автор',
     )
 
 
@@ -104,7 +111,7 @@ class Tag(models.Model):
         validators=(validate_hex_color,),
     )
     slug = models.SlugField(
-        verbose_name='slug',
+        verbose_name='Слаг',
         max_length=SLUG_MAX_LENGTH,
         unique=True,
     )
@@ -150,6 +157,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        verbose_name='Автор',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -161,25 +169,22 @@ class Recipe(models.Model):
         max_length=NAME_MAX_LENGTH,
     )
     image = models.ImageField(
+        verbose_name='Картинка',
         upload_to='recipes/images/',
         default=None,
+        validators=(validate_image,)
     )
     text = models.TextField(
         verbose_name='Описание',
         max_length=DESCRIPTION_MAX_LENGTH,
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=[
-            MaxValueValidator(
-                COOKING_TIME_MAX_VALUE,
-                f'Время приготовления не может быть больше {COOKING_TIME_MAX_VALUE} минут.'
-            )
-        ],
         verbose_name='Время приготовления',
+        validators=(validate_cooking_time,),
     )
     pub_date = models.DateTimeField(
-        auto_now_add=True,
         verbose_name='Дата публикации',
+        auto_now_add=True,
     )
 
     class Meta:
@@ -198,13 +203,16 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
+        verbose_name='Ингредиент',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        verbose_name='Рецепт',
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
+        validators=(validate_amount,)
     )
 
     class Meta:
@@ -217,8 +225,16 @@ class IngredientRecipe(models.Model):
 
 
 class TagRecipe(models.Model):
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        verbose_name='Тэг',
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+    )
 
     def __str__(self):
         return f'{self.tag} {self.recipe}'
@@ -230,10 +246,12 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        verbose_name='Юзер',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        verbose_name='Рецепт',
     )
 
     class Meta:
@@ -248,10 +266,12 @@ class FavoriteRecipe(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        verbose_name='Юзер',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        verbose_name='Рецепт',
     )
 
     class Meta:

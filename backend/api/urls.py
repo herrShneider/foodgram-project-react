@@ -39,15 +39,21 @@ urlpatterns = [
          ),
     path('', include(router_v1.urls)),
     path('recipes/<recipe_id>/shopping_cart/',
-         views.ShoppingCartViewSet.as_view({'post': 'create', 'delete': 'destroy'}),
+         views.ShoppingCartViewSet.as_view(
+             {'post': 'create', 'delete': 'destroy'}
+         ),
          name='shopping_cart',
          ),
     path('recipes/<recipe_id>/favorite/',
-         views.FavoriteRecipeViewSet.as_view({'post': 'create', 'delete': 'destroy'}),
+         views.FavoriteRecipeViewSet.as_view(
+             {'post': 'create', 'delete': 'destroy'}
+         ),
          name='favorite',
          ),
     path('users/<user_id>/subscribe/',
-         views.SubscribeViewSet.as_view({'post': 'create', 'delete': 'destroy'}),
+         views.SubscribeViewSet.as_view(
+             {'post': 'create', 'delete': 'destroy'}
+         ),
          name='subscribe',
          ),
     path('auth/', include('djoser.urls.authtoken')),
