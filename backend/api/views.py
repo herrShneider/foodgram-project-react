@@ -1,25 +1,27 @@
 import io
 
+from django.contrib.auth import authenticate
+from django.db.models import Sum
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-
-from django.contrib.auth import authenticate
-from django.http import FileResponse
-from django.db.models import Sum
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
+
 
 from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
 from .permissions import IsAuthorAdminOrReadOnly
-from .serializers import (FavoriteRecipeReadSerializer, FavoriteRecipeWriteSerializer,
+from .serializers import (FavoriteRecipeReadSerializer,
+                          FavoriteRecipeWriteSerializer,
                           IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShoppingCartReadSerializer,
                           ShoppingCartWriteSerializer, SubscribeReadSerializer,
@@ -35,7 +37,6 @@ URL_DOWNLOAD_SHOPPING_CART = 'download_shopping_cart'
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Вьюсет для работы администратора с users."""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -49,7 +50,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     def get_serializer_context(self):
-        """Передаёт объекта запроса в контекст сериализатора."""
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
@@ -61,7 +61,6 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path=URL_PROFILE_PREF,
     )
     def get_users_profile(self, request):
-        """Обрабатывает GET запросы при обращению к профайлу."""
         return Response(UserSerializer(request.user).data)
 
     @action(
@@ -71,8 +70,6 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path=URL_SET_PASSWORD,
     )
     def set_password(self, request):
-        """Обрабатывает POST запрос на изменение пароля."""
-
         current_user = request.user
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
@@ -98,7 +95,10 @@ class UserViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 serializer.save()
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(
                 {'message': 'Пароль успешно изменен'},
                 status=status.HTTP_204_NO_CONTENT
@@ -119,7 +119,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeSetFilter
 
     def get_serializer_context(self):
-        """Передаёт объекта запроса в контекст сериализатора."""
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
@@ -153,14 +152,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
-        print('def update')
         serializer = RecipeWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ingredients_data = serializer.validated_data.pop('ingredients')
         tags_data = serializer.validated_data.pop('tags')
         recipe = get_object_or_404(Recipe, pk=self.kwargs.get('pk'))
         # Проверка прав. Django получает объект get_object_or_404 раньше
-        # чем срабатывает метод update, поэтому не вызывается has_object_permission
+        # чем срабатывает метод update, поэтому не
+        # вызывается has_object_permission
         self.check_object_permissions(request, recipe)
         Recipe.objects.filter(
             pk=self.kwargs.get('pk')
@@ -201,13 +200,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         lines.append('Shopping cart:')
         lines.append('')
         shopping_carts = request.user.shopping_carts.all()
-        # __in: это оператор фильтрации, который позволяет указать список
         recipes = Recipe.objects.filter(
             shopping_carts__in=shopping_carts
         )
-        #  Создаем queryset ингредиентов, из которых состоят рецепты.
-        #  Используем distinct(), чтобы убедиться, что каждый ингредиент
-        #  возвращается только один раз.
         ingredients = Ingredient.objects.filter(
             recipes__in=recipes
         ).distinct()
@@ -348,7 +343,10 @@ class SubscribeViewSet(
     def create(self, request, *args, **kwargs):
         user_subscribed_to = self.get_user_subscribed_to()
         serializer = SubscribeWriteSerializer(
-            data={'subscriber': request.user.pk, 'subscription': user_subscribed_to.pk},
+            data={
+                'subscriber': request.user.pk,
+                'subscription': user_subscribed_to.pk
+            },
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
@@ -385,13 +383,15 @@ class SubscriptionsListViewSet(generics.ListAPIView):
     pagination_class = LimitOffsetPagination
 
     def get_serializer_context(self):
-        """Передаёт объекта запроса в контекст сериализатора."""
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
 
     def get_queryset(self):
-        """Возвращает queryset пользователей, на которых подписан текущий пользователь."""
+        """
+        Возвращает queryset пользователей, на которых подписан
+        текущий пользователь.
+        """
         subscribed_to_users = User.objects.filter(
             subscription_subscribed_to__subscriber=self.request.user
         )

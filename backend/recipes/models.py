@@ -1,18 +1,17 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH,
+from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH,
+                    FIRST_NAME_LENGTH,
                     LAST_NAME_LENGTH, NAME_MAX_LENGTH,
                     PASSWORD_LENGTH, SLUG_MAX_LENGTH,
                     TAG_COLOR_MAX_LENGTH, TEXT_LIMIT, USERNAME_LENGTH)
-
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_hex_color, validate_image,
                                 validate_not_me, validate_username_via_regex)
 
 
 class User(AbstractUser):
-    """Модель кастомного юзера."""
 
     ADMIN = 'admin'
     USER = 'user'
@@ -62,12 +61,10 @@ class User(AbstractUser):
         ordering = ('username',)
 
     def __str__(self):
-        """Возвращает 'Имя Фамилия' при попытке распечатать ."""
         return f'{self.first_name} {self.last_name}'
 
     @property
     def is_admin(self):
-        """Клиент администратор."""
         return self.role == self.ADMIN or self.is_staff
 
     def save(self, *args, **kwargs):
@@ -79,7 +76,6 @@ class User(AbstractUser):
 
 
 class Subscription(models.Model):
-    """Класс подписок."""
 
     subscriber = models.ForeignKey(
         User,
@@ -96,7 +92,6 @@ class Subscription(models.Model):
 
 
 class Tag(models.Model):
-    """Модель тегов."""
 
     name = models.CharField(
         verbose_name='Название',
@@ -126,7 +121,6 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    """Модель ингридиентов."""
 
     name = models.CharField(
         verbose_name='Название',
@@ -147,7 +141,6 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    """Класс рецептов."""
 
     tags = models.ManyToManyField(
         Tag,
@@ -198,7 +191,6 @@ class Recipe(models.Model):
 
 
 class IngredientRecipe(models.Model):
-    """Промежуточная таблица для добавления колличества."""
 
     ingredient = models.ForeignKey(
         Ingredient,
@@ -241,7 +233,6 @@ class TagRecipe(models.Model):
 
 
 class ShoppingCart(models.Model):
-    """Класс Списка покупок."""
 
     user = models.ForeignKey(
         User,
@@ -261,7 +252,6 @@ class ShoppingCart(models.Model):
 
 
 class FavoriteRecipe(models.Model):
-    """Класс Избранных рецептов."""
 
     user = models.ForeignKey(
         User,

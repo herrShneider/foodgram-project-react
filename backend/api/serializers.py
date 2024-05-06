@@ -14,7 +14,6 @@ from recipes.validators import (validate_amount, validate_cooking_time,
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Базовая модель сериалайзера для модели User."""
 
     class Meta:
         model = User
@@ -60,10 +59,13 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class ImageDecodedField(serializers.ImageField):
-    """Декодирует строку из base64 и возвращает объект-обертку для дальнейшего сохранения в виде файла."""
+    """
+    Декодирует строку из base64 и возвращает объект-обертку
+     для дальнейшего сохранения в виде файла.
+     """
 
     def to_internal_value(self, data):
-        """Разбивает данные по ;base64, на заголовок и строковый код картинки."""
+        """Разбивает по ;base64, на заголовок и строковый код картинки."""
         if not data:
             return None
         header, imagestr = data.split(';base64,')
@@ -197,7 +199,6 @@ class ShoppingCartWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'recipe')
 
     def validate(self, data):
-        """Функция проверки данных."""
         if self.context['request'].method != 'POST':
             return data
         user = self.context.get('request').user
@@ -233,7 +234,6 @@ class FavoriteRecipeWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'recipe')
 
     def validate(self, data):
-        """Функция проверки данных."""
         if self.context['request'].method != 'POST':
             return data
         user = self.context.get('request').user
@@ -270,7 +270,6 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
         fields = ('subscriber', 'subscription')
 
     def validate_subscription(self, user_subscribed_to):
-        """Валидация на уровне поля."""
         subscriber = self.context['request'].user
 
         if subscriber == user_subscribed_to:
