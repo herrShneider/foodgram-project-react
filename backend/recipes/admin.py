@@ -1,7 +1,9 @@
 from django.contrib import admin
-from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import FavoriteRecipe, Ingredient, Recipe, ShoppingCart, Subscription, Tag, User
+from django.contrib.auth.models import Group
+
+from .models import (FavoriteRecipe, Ingredient, Recipe,
+                     ShoppingCart, Subscription, Tag, User)
 
 admin.site.unregister(Group)
 
@@ -24,8 +26,32 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'color',
+        'slug',
+    )
+
+
+class IngredientInline(admin.TabularInline):
+    model = Ingredient.recipes.through
+    extra = 0
+
+
+class TagInline(admin.TabularInline):
+    model = Tag.recipes.through
+    extra = 0
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    model = Recipe
+    inlines = [
+        IngredientInline,
+        TagInline,
+    ]
     list_display = (
         'author',
         'name',
@@ -53,15 +79,6 @@ class IngredientAdmin(admin.ModelAdmin):
     )
     list_filter = (
         'name',
-    )
-
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = (
-        'name',
-        'color',
-        'slug',
     )
 
 
