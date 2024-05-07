@@ -133,3 +133,7 @@ dmypy.json
 
 # temporary files
 backend/temporary.py
+
+# media-files
+.media/
+media/
