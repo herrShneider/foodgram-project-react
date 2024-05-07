@@ -67,13 +67,6 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == self.ADMIN or self.is_staff
 
-    def save(self, *args, **kwargs):
-        if self.password:
-            # validate_password(self.password, user=self)
-            # проходит 500 ошибка а не 400
-            self.set_password(self.password)
-        super().save(*args, **kwargs)
-
 
 class Subscription(models.Model):
 
@@ -89,6 +82,10 @@ class Subscription(models.Model):
         related_name='subscription_subscribed_to',
         verbose_name='Автор',
     )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
 
 
 class Tag(models.Model):
@@ -137,7 +134,7 @@ class Ingredient(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name[:TEXT_LIMIT]
+        return f'{self.name} {self.measurement_unit}'[:TEXT_LIMIT]
 
 
 class Recipe(models.Model):
@@ -187,7 +184,7 @@ class Recipe(models.Model):
         default_related_name = 'recipes'
 
     def __str__(self):
-        return self.name[:TEXT_LIMIT]
+        return f'{self.name} {self.author}'
 
 
 class IngredientRecipe(models.Model):

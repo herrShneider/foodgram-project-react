@@ -1,5 +1,6 @@
 import base64
 
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
@@ -13,7 +14,7 @@ from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_image)
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class MyUserCreateSerializer(UserCreateSerializer):
 
     class Meta:
         model = User
@@ -26,13 +27,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
         }
 
 
-class UserSerializer(UserCreateSerializer):
+class MyUserSerializer(UserSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta(UserCreateSerializer.Meta):
+    class Meta:
 
-        fields = UserCreateSerializer.Meta.fields + ('is_subscribed',)
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed',
+        )
 
     def get_is_subscribed(self, user_subscribed_to):
         request = self.context.get('request')
@@ -287,7 +292,7 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
         return user_subscribed_to
 
 
-class SubscribeReadSerializer(UserSerializer):
+class SubscribeReadSerializer(MyUserSerializer):
 
     recipes = FavoriteRecipeReadSerializer(
         read_only=True,
@@ -295,7 +300,7 @@ class SubscribeReadSerializer(UserSerializer):
     )
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta(UserSerializer.Meta):
+    class Meta(MyUserSerializer.Meta):
         model = User
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count',)
 

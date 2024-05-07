@@ -22,32 +22,29 @@ from .filters import IngredientSetFilter, RecipeSetFilter
 from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FavoriteRecipeReadSerializer,
                           FavoriteRecipeWriteSerializer,
-                          IngredientSerializer, RecipeReadSerializer,
+                          IngredientSerializer, MyUserCreateSerializer,
+                          MyUserSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, ShoppingCartReadSerializer,
                           ShoppingCartWriteSerializer, SubscribeReadSerializer,
-                          SubscribeWriteSerializer, TagSerializer,
-                          UserCreateSerializer, UserSerializer, )
-from config import URL_PROFILE_PREF, URL_SET_PASSWORD
+                          SubscribeWriteSerializer, TagSerializer)
+from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART,
+                    URL_PROFILE_PREF, URL_SET_PASSWORD)
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Subscription, Tag, User)
-
-HTTP_METHODS = ('get', 'post', 'patch', 'delete')
-URL_SHOPPING_CART = 'shopping_cart'
-URL_DOWNLOAD_SHOPPING_CART = 'download_shopping_cart'
 
 
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = MyUserSerializer
     http_method_names = ('get', 'post',)
     permission_classes = (AllowAny,)
     filter_backends = (DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return UserCreateSerializer
-        return UserSerializer
+            return MyUserCreateSerializer
+        return MyUserSerializer
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -61,7 +58,7 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path=URL_PROFILE_PREF,
     )
     def get_users_profile(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(MyUserSerializer(request.user).data)
 
     @action(
         detail=False,
@@ -87,18 +84,13 @@ class UserViewSet(viewsets.ModelViewSet):
             password=current_password
         )
         if user is not None:
-            serializer = UserSerializer(
+            serializer = MyUserCreateSerializer(
                 user,
                 data={'password': new_password},
                 partial=True
             )
-            if serializer.is_valid():
-                serializer.save()
-            else:
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             return Response(
                 {'message': 'Пароль успешно изменен'},
                 status=status.HTTP_204_NO_CONTENT
