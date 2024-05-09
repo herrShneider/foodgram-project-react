@@ -1,15 +1,13 @@
 import base64
 
-from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 
-from recipes.models import (FavoriteRecipe, Ingredient,
-                            IngredientRecipe, Recipe,
-                            ShoppingCart, Subscription,
-                            Tag, User)
+from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+                            Recipe, ShoppingCart, Subscription, Tag, User)
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_image)
 

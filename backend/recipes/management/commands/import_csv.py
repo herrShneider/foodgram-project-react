@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils.timezone import now
 
-from recipes.models import Ingredient, Tag, Recipe, User, IngredientRecipe
+from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag, User
 
 csv_files = [
     'users.csv',
@@ -15,7 +15,8 @@ csv_files = [
 ]
 
 csv_fields = {
-    'users.csv': ['email', 'username', 'first_name', 'last_name', 'password', 'role'],
+    'users.csv': ['email', 'username', 'first_name',
+                  'last_name', 'password', 'role'],
     'ingredients.csv': ['name', 'measurement_unit'],
     'tags.csv': ['name', 'color', 'slug'],
     'recipes.csv': ['name', 'text', 'cooking_time'],
@@ -56,7 +57,9 @@ def csv_reader_file(csv_file_name):
 
 class Command(BaseCommand):
 
-    image_string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==',
+    image_string = ('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgM'
+                    'AAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAO'
+                    'xAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==')
 
     def handle(self, *args, **options):
         """Функция валидации полей и импорта."""
@@ -65,8 +68,12 @@ class Command(BaseCommand):
             model_class = models.get(model)
             for row in csv_reader_file(csv_file_name):
                 if model_class == Recipe:
-                    tags_queryset = Tag.objects.filter(id__in=row['tags'].split('%'))
-                    ingredients_queryset = Ingredient.objects.filter(id__in=row['ingredients'].split('%'))
+                    tags_queryset = Tag.objects.filter(
+                        id__in=row['tags'].split('%')
+                    )
+                    ingredients_queryset = Ingredient.objects.filter(
+                        id__in=row['ingredients'].split('%')
+                    )
                     author = User.objects.get(username=row['author'])
                     recipe = Recipe.objects.create(
                         author=author,
@@ -76,7 +83,7 @@ class Command(BaseCommand):
                         cooking_time=row['cooking_time'],
                     )
                     for ingredient_pk in row['ingredients'].split('%'):
-                        ingredient_recipe = IngredientRecipe.objects.create(
+                        IngredientRecipe.objects.create(
                             ingredient_id=ingredient_pk,
                             recipe=recipe,
                             amount=row['amount']

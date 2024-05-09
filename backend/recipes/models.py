@@ -2,10 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH,
-                    FIRST_NAME_LENGTH,
-                    LAST_NAME_LENGTH, NAME_MAX_LENGTH,
-                    PASSWORD_LENGTH, SLUG_MAX_LENGTH,
-                    TAG_COLOR_MAX_LENGTH, TEXT_LIMIT, USERNAME_LENGTH)
+                    FIRST_NAME_LENGTH, LAST_NAME_LENGTH, NAME_MAX_LENGTH,
+                    PASSWORD_LENGTH, SLUG_MAX_LENGTH, TAG_COLOR_MAX_LENGTH,
+                    TEXT_LIMIT, USERNAME_LENGTH)
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_hex_color, validate_image,
                                 validate_not_me, validate_username_via_regex)

@@ -16,4 +16,3 @@ COOK_TIME_MIN_VALUE = 1
 TEXT_LIMIT = 20
 HTTP_METHODS = ('get', 'post', 'patch', 'delete')
 URL_DOWNLOAD_SHOPPING_CART = 'download_shopping_cart'
-

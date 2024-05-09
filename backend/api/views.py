@@ -17,21 +17,21 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
+from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
+                    URL_SET_PASSWORD)
+from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+                            Recipe, ShoppingCart, Subscription, Tag, User)
 
 from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
 from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FavoriteRecipeReadSerializer,
-                          FavoriteRecipeWriteSerializer,
-                          IngredientSerializer, MyUserCreateSerializer,
-                          MyUserSerializer, RecipeReadSerializer,
-                          RecipeWriteSerializer, ShoppingCartReadSerializer,
+                          FavoriteRecipeWriteSerializer, IngredientSerializer,
+                          MyUserCreateSerializer, MyUserSerializer,
+                          RecipeReadSerializer, RecipeWriteSerializer,
+                          ShoppingCartReadSerializer,
                           ShoppingCartWriteSerializer, SubscribeReadSerializer,
                           SubscribeWriteSerializer, TagSerializer)
-from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART,
-                    URL_PROFILE_PREF, URL_SET_PASSWORD)
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
-                            Recipe, ShoppingCart, Subscription, Tag, User)
 
 
 class UserViewSet(viewsets.ModelViewSet):
