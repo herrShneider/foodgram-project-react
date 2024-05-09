@@ -1,6 +1,7 @@
 import io
 
 from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
@@ -86,7 +87,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if user is not None:
             serializer = MyUserCreateSerializer(
                 user,
-                data={'password': new_password},
+                data={'password': make_password(new_password)},
                 partial=True
             )
             serializer.is_valid(raise_exception=True)

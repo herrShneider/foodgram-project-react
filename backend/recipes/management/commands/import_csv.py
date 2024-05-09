@@ -46,7 +46,7 @@ def make_image_file(data):
 def csv_reader_file(csv_file_name):
     """Функция чтения из файла."""
     with open(
-        '../data/' + csv_file_name,
+        'data_for_test/' + csv_file_name,
         'r',
         encoding='utf-8'
     )as csvfile:
