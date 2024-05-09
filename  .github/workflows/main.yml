@@ -1,13 +1,12 @@
-name: Main Taski Workflow
+name: Main Foodgram Workflow
 on:
   push:
-    branches:
-      - master
+
 jobs:
   checkout-and-print-tree:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code  # Имя шага задаём сами
-        uses: actions/checkout@v3  # Берём готовое решение из библиотеки GitHub Actions
+      - name: Check out repository code
+        uses: actions/checkout@v3
       - name: Print project tree
         run: tree .
