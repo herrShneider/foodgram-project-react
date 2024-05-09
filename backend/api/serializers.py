@@ -302,7 +302,7 @@ class SubscribeReadSerializer(MyUserSerializer):
 
     class Meta(MyUserSerializer.Meta):
         model = User
-        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count',)
+        fields = MyUserSerializer.Meta.fields + ('recipes', 'recipes_count',)
 
     def get_recipes_count(self, user_subscribed_to):
         return Recipe.objects.filter(author=user_subscribed_to).count()

@@ -11,7 +11,7 @@ csv_files = [
     'users.csv',
     'ingredients.csv',
     'tags.csv',
-    'recipes.csv',
+    # 'recipes.csv',
 ]
 
 csv_fields = {
