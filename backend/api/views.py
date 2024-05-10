@@ -1,11 +1,15 @@
 import io
 
+from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
+                    URL_SET_PASSWORD)
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+                            Recipe, ShoppingCart, Subscription, Tag, User)
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -16,11 +20,6 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-
-from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
-                    URL_SET_PASSWORD)
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
-                            Recipe, ShoppingCart, Subscription, Tag, User)
 
 from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
