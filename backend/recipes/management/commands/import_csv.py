@@ -7,7 +7,7 @@ from django.utils.timezone import now
 from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag, User
 
 csv_files = [
-    'users.csv',
+    # 'users.csv',
     'ingredients.csv',
     'tags.csv',
     # 'recipes.csv',
