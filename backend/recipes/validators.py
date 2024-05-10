@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 
 
 def validate_username_via_regex(username):
-    """Валидация поля username."""
     invalid_characters = re.sub(USERNAME_VALID_PATTERN, '', username)
     if invalid_characters:
         invalid_characters = "".join(set(invalid_characters))
@@ -20,7 +19,6 @@ def validate_username_via_regex(username):
 
 
 def validate_not_me(username):
-    """Функция-валидатор. Проверяет, что username != me."""
     if username == URL_PROFILE_PREF:
         raise ValidationError(
             f'Использовать имя "{URL_PROFILE_PREF}" в '
