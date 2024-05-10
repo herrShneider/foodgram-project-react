@@ -1,18 +1,13 @@
-import io
-
 from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
                     URL_SET_PASSWORD)
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Subscription, Tag, User)
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen.canvas import Canvas
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -183,13 +178,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path=URL_DOWNLOAD_SHOPPING_CART
     )
     def download_shopping_cart(self, request):
-        pdfmetrics.registerFont(TTFont('Arial', 'arial.ttf'))
-        buf = io.BytesIO()
-        canvas_for_pdf = Canvas(buf)
-        canvas_for_pdf.setFont('Arial', 12)
-        textob = canvas_for_pdf.beginText(40, 780)
         lines = []
-        lines.append('Shopping cart:')
+        lines.append('Список покупок:')
         lines.append('')
         shopping_carts = request.user.shopping_carts.all()
         recipes = Recipe.objects.filter(
@@ -202,22 +192,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             total_amount = IngredientRecipe.objects.filter(
                 recipe__in=recipes,
                 ingredient=ingredient
-            ).aggregate(total_amount=Sum('amount'))['total_amount']
+            ).aggregate(
+                total_amount=Sum('amount')
+            ).get('total_amount', 0)
             lines.append(f'{ingredient.name} - {total_amount}')
 
-        for line in lines:
-            textob.textLines(line)
-
-        canvas_for_pdf.drawText(textob)
-        canvas_for_pdf.showPage()
-        canvas_for_pdf.save()
-        buf.seek(0)
-        pdf_file = buf
-        return FileResponse(
-            pdf_file,
-            as_attachment=True,
-            filename='shopping_cart.pdf'
+        content = '\n'.join(lines)
+        response = HttpResponse(content, content_type="text/plain")
+        response['Content-Disposition'] = (
+            'attachment; filename=Shopping cart.txt'
         )
+        return response
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
