@@ -1,6 +1,7 @@
+from django_filters import ModelMultipleChoiceFilter
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
                                            FilterSet, NumberFilter)
-from recipes.models import FavoriteRecipe, Ingredient, Recipe, ShoppingCart
+from recipes.models import FavoriteRecipe, Ingredient, Recipe, ShoppingCart, Tag
 
 
 class IngredientSetFilter(FilterSet):
@@ -21,8 +22,11 @@ class RecipeSetFilter(FilterSet):
         field_name='author',
         lookup_expr='exact'
     )
-    tags = CharFilter(
-        method='filter_by_tags'
+    tags = ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        field_name='tags__slug',  # field_name указывает на поле slug связанной модели Tag
+        to_field_name='slug',     # to_field_name указывает на поле slug модели Tag
+        label='tags',
     )
     is_in_shopping_cart = BooleanFilter(
         method='filter_by_is_in_shopping_cart'
@@ -34,12 +38,6 @@ class RecipeSetFilter(FilterSet):
     class Meta:
         model = Recipe
         fields = ('author', 'tags', 'is_in_shopping_cart', 'is_favorited')
-
-    def filter_by_tags(self, queryset, name, value):
-        # Получаем значения tags из URL и подставляем в фильтр
-        return queryset.filter(
-            tags__slug__in=self.request.query_params.getlist('tags')
-        )
 
     def filter_by_is_in_shopping_cart(self, queryset, name, value):
         if self.request.user.is_authenticated and value:

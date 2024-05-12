@@ -3,6 +3,7 @@ from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH,
                     PASSWORD_LENGTH, SLUG_MAX_LENGTH, TAG_COLOR_MAX_LENGTH,
                     TEXT_LIMIT, USERNAME_LENGTH)
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_hex_color, validate_image,
@@ -84,9 +85,19 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('subscriber', 'subscription'),
+                name='Ограничение повторной подписки',
+            ),
+        )
 
     def __str__(self):
         return f'{self.subscriber} подписан на {self.subscription}'
+
+    def clean(self):
+        if self.subscriber == self.subscription:
+            raise ValidationError('Нельзя подписаться на самого себя.')
 
 
 class Tag(models.Model):
@@ -209,6 +220,12 @@ class IngredientRecipe(models.Model):
         verbose_name = 'ИнгредиентРецепт'
         verbose_name_plural = 'ИнгредиентыРецепты'
         default_related_name = 'ingredientsrecipes'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('ingredient', 'recipe'),
+                name='Ограничение повторного добавления ингредиента к рецепту',
+            ),
+        )
 
     def __str__(self):
         return f'{self.recipe} {self.ingredient} {self.amount}'[:TEXT_LIMIT]
@@ -225,6 +242,14 @@ class TagRecipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
     )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('tag', 'recipe'),
+                name='Ограничение повторного добавления тэга к рецепту',
+            ),
+        )
 
     def __str__(self):
         return f'{self.tag} {self.recipe}'
@@ -247,6 +272,13 @@ class ShoppingCart(models.Model):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
         default_related_name = 'shopping_carts'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='Ограничение повторного добавления рецепта в список покупок',
+            ),
+        )
+
 
 
 class FavoriteRecipe(models.Model):
@@ -266,3 +298,9 @@ class FavoriteRecipe(models.Model):
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
         default_related_name = 'favorite_recipes'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='Ограничение повторного добавления рецепта в избранное',
+            ),
+        )

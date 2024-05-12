@@ -7,10 +7,10 @@ from django.utils.timezone import now
 from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag, User
 
 csv_files = [
-    # 'users.csv',
+    'users.csv',
     'ingredients.csv',
     'tags.csv',
-    # 'recipes.csv',
+    'recipes.csv',
 ]
 
 csv_fields = {
@@ -77,7 +77,7 @@ class Command(BaseCommand):
                     recipe = Recipe.objects.create(
                         author=author,
                         name=row['name'],
-                        image=make_image_file(self.image_string[0]),
+                        image=make_image_file(self.image_string),
                         text=row['text'],
                         cooking_time=row['cooking_time'],
                     )

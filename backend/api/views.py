@@ -11,7 +11,6 @@ from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
@@ -20,7 +19,7 @@ from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
 from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FavoriteRecipeReadSerializer,
-                          FavoriteRecipeWriteSerializer, IngredientSerializer,
+                          FavoriteRecipeWriteSerializer, IngredientSerializer, ImageDecodedField,
                           MyUserCreateSerializer, MyUserSerializer,
                           RecipeReadSerializer, RecipeWriteSerializer,
                           ShoppingCartReadSerializer,
@@ -133,13 +132,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             instance=recipe,
             context={'request': request}
         )
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        serializer = RecipeWriteSerializer(data=request.data)
+        serializer = RecipeWriteSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         ingredients_data = serializer.validated_data.pop('ingredients')
         tags_data = serializer.validated_data.pop('tags')
@@ -148,16 +144,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
         # чем срабатывает метод update, поэтому не
         # вызывается has_object_permission
         self.check_object_permissions(request, recipe)
-        Recipe.objects.filter(
-            pk=self.kwargs.get('pk')
-        ).update(**serializer.validated_data)
-        recipe = get_object_or_404(
-            Recipe,
-            pk=self.kwargs.get('pk')
-        )
-        IngredientRecipe.objects.filter(
-            recipe=recipe
-        ).delete()
+        if 'image' not in request.data:
+            serializer.validated_data['image'] = recipe.image
+
+        # Обновляем атрибуты объекта recipe
+
+        for key, value in serializer.validated_data.items():
+            setattr(recipe, key, value)
+
+        # Сохраняем изменения
+        recipe.save()
+
+        # serializer.validated_data['image'] = ImageDecodedField(serializer.validated_data['image'])
+
+        # updated_recipe = Recipe.objects.filter(pk=self.kwargs.get('pk')).update(**serializer.validated_data)
+        #_______________________________________________________________
+        # updated_recipe, is_created = Recipe.objects.update_or_create(
+        #     pk=self.kwargs.get('pk'),
+        #     defaults={'author': self.request.user, **serializer.validated_data}
+        # )
+        IngredientRecipe.objects.filter(recipe=recipe).delete()
         for ingredient_data in ingredients_data:
             IngredientRecipe.objects.create(
                 ingredient=ingredient_data['id'],
@@ -226,6 +232,8 @@ class ShoppingCartFavoriteRecipeViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
+
+    """Базовый класс для Избранного и Списка покупок."""
 
     http_method_names = ('post', 'delete')
     pagination_class = None
@@ -357,7 +365,6 @@ class SubscriptionsListViewSet(generics.ListAPIView):
     serializer_class = SubscribeReadSerializer
     permission_classes = (IsAuthenticated,)
     http_method_names = ('get',)
-    pagination_class = LimitOffsetPagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
