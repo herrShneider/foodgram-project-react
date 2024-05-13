@@ -137,3 +137,7 @@ backend/temporary.py
 # media-files
 .media/
 media/
+
+.bash_profile
+
+docker-compose.yml
