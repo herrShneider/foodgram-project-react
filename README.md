@@ -60,6 +60,14 @@ sudo docker compose -f docker-compose.production.yml exec backend python manage.
 ```
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py import_csv_test
 ```
+Логины и пароли для тестовых пользователей:
+```
+JaKolas@gmail.com
+MySecretPassword14
+
+JaKupala@gmail.com
+MySecretPassword14
+```
 
 В папке docs находятся файлы спецификации API. 
 
