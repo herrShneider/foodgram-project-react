@@ -4,12 +4,12 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework import serializers
 
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Subscription, Tag, User)
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_image)
-from rest_framework import serializers
 
 
 class MyUserCreateSerializer(UserCreateSerializer):
@@ -105,7 +105,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     image = ImageDecodedField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    # is_subsribed = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -137,15 +136,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                 recipe=obj
             ).exists()
         return False
-
-    # def get_is_subsribed(self, obj):
-    #     request = self.context.get('request')
-    #     if request and request.user.is_authenticated:
-    #         return Subscription.objects.filter(
-    #             subscriber=request.user,
-    #             subscription=obj.author
-    #         ).exists()
-    #     return False
 
 
 class IngredientRecipeWriteSerializer(serializers.ModelSerializer):
@@ -197,20 +187,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise ValidationError('Вы передали один из тегов дважды.')
         return data
 
-# class RecipeUpdateSerializer(serializers.ModelSerializer):
-#
-#     image = ImageDecodedField(
-#         validators=(validate_image,)
-#     )
-#     cooking_time = serializers.IntegerField(
-#         validators=(validate_cooking_time,)
-#     )
-#
-#     class Meta:
-#         model = Recipe
-#         exclude = ('pub_date',)
-#         read_only_fields = ('author',)
-
 
 class ShoppingCartWriteSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
@@ -224,20 +200,13 @@ class ShoppingCartWriteSerializer(serializers.ModelSerializer):
         model = ShoppingCart
         fields = '__all__'
         read_only_fields = ('user', 'recipe')
-
-    def validate(self, data):
-        if self.context['request'].method != 'POST':
-            return data
-        user = self.context.get('request').user
-        recipe = data.get('recipe')
-        if ShoppingCart.objects.filter(
-                user=user,
-                recipe=recipe
-        ).exists():
-            raise serializers.ValidationError(
-                'Это рецепт уже добавлен в список покупок.'
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=ShoppingCart.objects.all(),
+                fields=('user', 'recipe'),
+                message='Это рецепт уже добавлен в список покупок.'
             )
-        return data
+        ]
 
 
 class ShoppingCartReadSerializer(serializers.ModelSerializer):
@@ -259,20 +228,13 @@ class FavoriteRecipeWriteSerializer(serializers.ModelSerializer):
         model = FavoriteRecipe
         fields = '__all__'
         read_only_fields = ('user', 'recipe')
-
-    def validate(self, data):
-        if self.context['request'].method != 'POST':
-            return data
-        user = self.context.get('request').user
-        recipe = data.get('recipe')
-        if FavoriteRecipe.objects.filter(
-                user=user,
-                recipe=recipe
-        ).exists():
-            raise serializers.ValidationError(
-                'Это рецепт уже добавлен в список покупок.'
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=FavoriteRecipe.objects.all(),
+                fields=('user', 'recipe'),
+                message='Этот рецепт уже в избранном.'
             )
-        return data
+        ]
 
 
 class FavoriteRecipeReadSerializer(serializers.ModelSerializer):
@@ -305,19 +267,10 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
 
     def validate_subscription(self, user_subscribed_to):
         subscriber = self.context['request'].user
-
         if subscriber == user_subscribed_to:
             raise serializers.ValidationError(
                 'Нельзя подписаться на самого себя!'
             )
-
-        # if subscriber.subscription_as_subscriber.filter(
-        #         subscription=user_subscribed_to
-        # ):
-        #     raise serializers.ValidationError(
-        #         'Вы уже подписаны на этого пользователя.'
-        #     )
-
         return user_subscribed_to
 
 

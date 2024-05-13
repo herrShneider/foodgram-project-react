@@ -1,13 +1,9 @@
-from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
-                    URL_SET_PASSWORD)
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
-                            Recipe, ShoppingCart, Subscription, Tag, User)
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -15,11 +11,16 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
+from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
+                    URL_SET_PASSWORD)
+from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+                            Recipe, ShoppingCart, Subscription, Tag, User)
+
 from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
 from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FavoriteRecipeReadSerializer,
-                          FavoriteRecipeWriteSerializer, IngredientSerializer, ImageDecodedField,
+                          FavoriteRecipeWriteSerializer, IngredientSerializer,
                           MyUserCreateSerializer, MyUserSerializer,
                           RecipeReadSerializer, RecipeWriteSerializer,
                           ShoppingCartReadSerializer,
@@ -146,23 +147,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, recipe)
         if 'image' not in request.data:
             serializer.validated_data['image'] = recipe.image
-
-        # Обновляем атрибуты объекта recipe
-
         for key, value in serializer.validated_data.items():
             setattr(recipe, key, value)
-
-        # Сохраняем изменения
         recipe.save()
-
-        # serializer.validated_data['image'] = ImageDecodedField(serializer.validated_data['image'])
-
-        # updated_recipe = Recipe.objects.filter(pk=self.kwargs.get('pk')).update(**serializer.validated_data)
-        #_______________________________________________________________
-        # updated_recipe, is_created = Recipe.objects.update_or_create(
-        #     pk=self.kwargs.get('pk'),
-        #     defaults={'author': self.request.user, **serializer.validated_data}
-        # )
         IngredientRecipe.objects.filter(recipe=recipe).delete()
         for ingredient_data in ingredients_data:
             IngredientRecipe.objects.create(

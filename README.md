@@ -56,10 +56,12 @@ sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/col
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py import_csv
 ```
 
-Для доступа к документации склонируйте репозиторий к себе на компьютер.
-Затем, находясь в папке infra, выполните команду docker-compose up.
-При выполнении этой команды контейнер frontend, описанный в docker-compose.yml, подготовит файлы, необходимые для работы фронтенд-приложения, а затем прекратит свою работу.
-По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API. 
+Для наполнения базы данных тестовыми пользователями и рецептами выполните manage команду:
+```
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py import_csv_test
+```
+
+В папке docs находятся файлы спецификации API. 
 
 
 Авторы: 

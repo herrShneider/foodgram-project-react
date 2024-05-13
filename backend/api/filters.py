@@ -1,7 +1,9 @@
 from django_filters import ModelMultipleChoiceFilter
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
                                            FilterSet, NumberFilter)
-from recipes.models import FavoriteRecipe, Ingredient, Recipe, ShoppingCart, Tag
+
+from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+                            Tag)
 
 
 class IngredientSetFilter(FilterSet):
@@ -24,8 +26,8 @@ class RecipeSetFilter(FilterSet):
     )
     tags = ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
-        field_name='tags__slug',  # field_name указывает на поле slug связанной модели Tag
-        to_field_name='slug',     # to_field_name указывает на поле slug модели Tag
+        field_name='tags__slug',
+        to_field_name='slug',
         label='tags',
     )
     is_in_shopping_cart = BooleanFilter(

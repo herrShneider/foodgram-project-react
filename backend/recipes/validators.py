@@ -1,9 +1,10 @@
 import re
 
+from django.core.exceptions import ValidationError
+
 from config import (COOK_TIME_MAX_VALUE, COOK_TIME_MIN_VALUE,
                     TAG_COLOR_VALID_PATTERN, URL_PROFILE_PREF,
                     USERNAME_VALID_PATTERN)
-from django.core.exceptions import ValidationError
 
 
 def validate_username_via_regex(username):

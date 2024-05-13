@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
-from django.core.exceptions import ValidationError
 
 from .models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
                      Subscription, Tag, User)
@@ -71,11 +69,17 @@ class RecipeAdminForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if not self.data.get('ingredientsrecipes-0-ingredient'):
-            raise forms.ValidationError('Поле ингредиента не может быть пустым.')
+            raise forms.ValidationError(
+                'Поле ингредиента не может быть пустым.'
+            )
         if not self.data.get('ingredientsrecipes-0-amount'):
-            raise forms.ValidationError('Поле колличества ингредиента не может быть пустым.')
+            raise forms.ValidationError(
+                'Поле колличества ингредиента не может быть пустым.'
+            )
         if not self.data.get('tagrecipe_set-0-tag'):
-            raise forms.ValidationError('Поле тэга не может быть пустым.')
+            raise forms.ValidationError(
+                'Поле тэга не может быть пустым.'
+            )
         return cleaned_data
 
 
@@ -103,6 +107,7 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='Добавлено в избранное, раз')
     def favorites_count(self, obj):
         return obj.favorite_recipes.count()
+
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
