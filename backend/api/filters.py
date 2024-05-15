@@ -1,7 +1,7 @@
 from django_filters import ModelMultipleChoiceFilter
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
                                            FilterSet, NumberFilter)
-from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+from recipes.models import (Favorite, Ingredient, Recipe, ShoppingCart,
                             Tag)
 
 
@@ -46,16 +46,16 @@ class RecipeSetFilter(FilterSet):
                 user=self.request.user
             )
             return queryset.filter(
-                shopping_carts__in=shoppingcart_recipes
+                shoppingcarts__in=shoppingcart_recipes
             )
         return queryset
 
     def filter_by_is_favorited(self, queryset, name, value):
         if self.request.user.is_authenticated and value:
-            favorited_recipes = FavoriteRecipe.objects.filter(
+            favorited_recipes = Favorite.objects.filter(
                 user=self.request.user
             )
             return queryset.filter(
-                favorite_recipes__in=favorited_recipes
+                favorites__in=favorited_recipes
             )
         return queryset

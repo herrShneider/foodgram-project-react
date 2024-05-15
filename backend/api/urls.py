@@ -9,7 +9,7 @@ router_v1 = DefaultRouter()
 
 router_v1.register(
     r'users',
-    views.UserViewSet,
+    views.FoodgramUserViewSet,
     basename='users',
 )
 router_v1.register(

@@ -1,23 +1,21 @@
-from config import (DESCRIPTION_MAX_LENGTH, EMAIL_FIELD_LENGTH,
+from colorfield.fields import ColorField
+
+from config import (EMAIL_FIELD_LENGTH,
                     FIRST_NAME_LENGTH, LAST_NAME_LENGTH, NAME_MAX_LENGTH,
-                    PASSWORD_LENGTH, SLUG_MAX_LENGTH, TAG_COLOR_MAX_LENGTH,
-                    TEXT_LIMIT, USERNAME_LENGTH)
+                    TAG_COLOR_MAX_LENGTH,
+                    SLICE_STR_METHOD_LIMIT, SLUG_MAX_LENGTH, USERNAME_LENGTH)
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from recipes.validators import (validate_amount, validate_cooking_time,
-                                validate_hex_color, validate_image,
-                                validate_not_me, validate_username_via_regex)
+from recipes.validators import (validate_image,
+                                validate_not_me, validate_username_via_regex, validate_hex_color)
 
 
 class User(AbstractUser):
 
-    ADMIN = 'admin'
-    USER = 'user'
-    CHOICES = [
-        (ADMIN, 'Администратор'),
-        (USER, 'Пользователь'),
-    ]
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', )
 
     email = models.EmailField(
         max_length=EMAIL_FIELD_LENGTH,
@@ -38,20 +36,6 @@ class User(AbstractUser):
         max_length=LAST_NAME_LENGTH,
         verbose_name='Фамилия',
     )
-    password = models.CharField(
-        max_length=PASSWORD_LENGTH,
-        verbose_name='Пароль',
-    )
-    role = models.CharField(
-        max_length=max(len(role) for role, _ in CHOICES),
-        choices=CHOICES,
-        default=USER,
-        blank=True,
-        verbose_name='Пользовательская роль',
-    )
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', ]
 
     class Meta:
 
@@ -60,11 +44,7 @@ class User(AbstractUser):
         ordering = ('username',)
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
-
-    @property
-    def is_admin(self):
-        return self.role == self.ADMIN or self.is_staff
+        return self.get_full_name()
 
 
 class Subscription(models.Model):
@@ -75,10 +55,10 @@ class Subscription(models.Model):
         related_name='subscription_as_subscriber',
         verbose_name='Подписчик',
     )
-    subscription = models.ForeignKey(
+    author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscription_subscribed_to',
+        related_name='subscription_as_author',
         verbose_name='Автор',
     )
 
@@ -87,17 +67,18 @@ class Subscription(models.Model):
         verbose_name_plural = 'Подписки'
         constraints = (
             models.UniqueConstraint(
-                fields=('subscriber', 'subscription'),
+                fields=('subscriber', 'author'),
                 name='Ограничение повторной подписки',
             ),
         )
 
     def __str__(self):
-        return f'{self.subscriber} подписан на {self.subscription}'
+        return f'{self.subscriber} подписан на {self.author}'
 
     def clean(self):
-        if self.subscriber == self.subscription:
+        if self.subscriber == self.author:
             raise ValidationError('Нельзя подписаться на самого себя.')
+        return super().save(self)
 
 
 class Tag(models.Model):
@@ -107,17 +88,16 @@ class Tag(models.Model):
         max_length=NAME_MAX_LENGTH,
         unique=True,
     )
-    color = models.CharField(
+    color = ColorField(
         verbose_name='Цвет',
         max_length=TAG_COLOR_MAX_LENGTH,
         help_text='Шестнадцатеричный код цвета, например, #49B64E.',
         unique=True,
-        validators=(validate_hex_color,),
     )
     slug = models.SlugField(
         verbose_name='Слаг',
-        max_length=SLUG_MAX_LENGTH,
         unique=True,
+        max_length=SLUG_MAX_LENGTH,
     )
 
     class Meta:
@@ -126,7 +106,7 @@ class Tag(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name[:TEXT_LIMIT]
+        return self.name[:SLICE_STR_METHOD_LIMIT]
 
 
 class Ingredient(models.Model):
@@ -144,16 +124,21 @@ class Ingredient(models.Model):
         verbose_name = 'Ингридиент'
         verbose_name_plural = 'Ингридиенты'
         ordering = ('name',)
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='Unique_name_measurement_unit',
+            ),
+        )
 
     def __str__(self):
-        return f'{self.name} {self.measurement_unit}'[:TEXT_LIMIT]
+        return f'{self.name} {self.measurement_unit}'[:SLICE_STR_METHOD_LIMIT]
 
 
 class Recipe(models.Model):
 
     tags = models.ManyToManyField(
         Tag,
-        through='TagRecipe',
         verbose_name='Теги',
     )
     author = models.ForeignKey(
@@ -178,11 +163,10 @@ class Recipe(models.Model):
     )
     text = models.TextField(
         verbose_name='Описание',
-        max_length=DESCRIPTION_MAX_LENGTH,
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=(validate_cooking_time,),
+        validators=(MinValueValidator(1), MaxValueValidator(32767)),
     )
     pub_date = models.DateTimeField(
         verbose_name='Дата публикации',
@@ -213,7 +197,7 @@ class IngredientRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=(validate_amount,)
+        validators=(MinValueValidator(1), MaxValueValidator(32767))
     )
 
     class Meta:
@@ -223,44 +207,20 @@ class IngredientRecipe(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=('ingredient', 'recipe'),
-                name='Ограничение повторного добавления ингредиента к рецепту',
+                name='Unique_ingredient_recipe',
             ),
         )
 
     def __str__(self):
-        return f'{self.recipe} {self.ingredient} {self.amount}'[:TEXT_LIMIT]
+        return f'{self.recipe} {self.ingredient} {self.amount}'[:SLICE_STR_METHOD_LIMIT]
 
 
-class TagRecipe(models.Model):
-    tag = models.ForeignKey(
-        Tag,
-        on_delete=models.CASCADE,
-        verbose_name='Тэг',
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-    )
-
-    class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=('tag', 'recipe'),
-                name='Ограничение повторного добавления тэга к рецепту',
-            ),
-        )
-
-    def __str__(self):
-        return f'{self.tag} {self.recipe}'
-
-
-class ShoppingCart(models.Model):
+class FavoriteShoppingCartModel(models.Model):
 
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Юзер',
+        verbose_name='Пользователь',
     )
     recipe = models.ForeignKey(
         Recipe,
@@ -269,37 +229,29 @@ class ShoppingCart(models.Model):
     )
 
     class Meta:
+        abstract = True
+        default_related_name ='%(class)ss'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='%(app_label)s_%(class)s_unique_constraint',
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.user} {self.recipe}'
+
+
+class ShoppingCart(FavoriteShoppingCartModel):
+
+
+    class Meta(FavoriteShoppingCartModel.Meta):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-        default_related_name = 'shopping_carts'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='Ограничение повторного добавления в список покупок',
-            ),
-        )
 
 
-class FavoriteRecipe(models.Model):
+class Favorite(FavoriteShoppingCartModel):
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Юзер',
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-    )
-
-    class Meta:
+    class Meta(FavoriteShoppingCartModel.Meta):
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
-        default_related_name = 'favorite_recipes'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='Ограничение повторного добавления рецепта в избранное',
-            ),
-        )

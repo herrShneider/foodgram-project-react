@@ -26,8 +26,8 @@ def validate_not_me(username):
         )
 
     return username
-
-
+#
+#
 def validate_hex_color(value):
     if not re.match(TAG_COLOR_VALID_PATTERN, value):
         raise ValidationError(
@@ -39,6 +39,15 @@ def validate_amount(amount):
     if amount < 1:
         raise ValidationError('Колличество не может быть меньше 1.')
     return amount
+
+
+# def validate_tag(tag):
+#     Recipe.objects.filter()
+#     if not image:
+#         raise ValidationError(
+#             'Создание рецепта без картинки - невозможно.'
+#         )
+#     return image
 
 
 def validate_image(image):

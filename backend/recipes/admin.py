@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.utils.safestring import mark_safe
 
-from .models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+from .models import (Favorite, Ingredient, Recipe, ShoppingCart,
                      Subscription, Tag, User)
 
 admin.site.unregister(Group)
@@ -18,7 +19,8 @@ class UserAdmin(admin.ModelAdmin):
         'username',
         'first_name',
         'last_name',
-        'display_role',
+        'recipes_count',
+        'subscribers_count',
     )
     list_filter = (
         'email',
@@ -29,17 +31,15 @@ class UserAdmin(admin.ModelAdmin):
         'username',
         'first_name',
         'last_name',
-        'role',
-        'is_superuser',
-        'is_staff',
-        'is_active',
-        'date_joined',
     )
 
-    def display_role(self, user):
-        return user.role
+    @admin.display(description='Кол-во рецептов')
+    def recipes_count(self, obj):
+        return obj.recipes.count()
 
-    display_role.short_description = 'Роль'
+    @admin.display(description='Кол-во подписчиков')
+    def subscribers_count(self, obj):
+        return obj.subscription_as_author.count()
 
 
 @admin.register(Tag)
@@ -49,64 +49,6 @@ class TagAdmin(admin.ModelAdmin):
         'color',
         'slug',
     )
-
-
-class IngredientInline(admin.TabularInline):
-    model = Ingredient.recipes.through
-    extra = 0
-
-
-class TagInline(admin.TabularInline):
-    model = Tag.recipes.through
-    extra = 0
-
-
-class RecipeAdminForm(forms.ModelForm):
-    class Meta:
-        model = Recipe
-        fields = '__all__'
-
-    def clean(self):
-        cleaned_data = super().clean()
-        if not self.data.get('ingredientsrecipes-0-ingredient'):
-            raise forms.ValidationError(
-                'Поле ингредиента не может быть пустым.'
-            )
-        if not self.data.get('ingredientsrecipes-0-amount'):
-            raise forms.ValidationError(
-                'Поле колличества ингредиента не может быть пустым.'
-            )
-        if not self.data.get('tagrecipe_set-0-tag'):
-            raise forms.ValidationError(
-                'Поле тэга не может быть пустым.'
-            )
-        return cleaned_data
-
-
-@admin.register(Recipe)
-class RecipeAdmin(admin.ModelAdmin):
-    form = RecipeAdminForm
-    inlines = [
-        IngredientInline,
-        TagInline,
-    ]
-    list_display = (
-        'author',
-        'name',
-        'image',
-        'text',
-        'cooking_time',
-        'favorites_count',
-    )
-    list_filter = (
-        'author',
-        'name',
-        'tags',
-    )
-
-    @admin.display(description='Добавлено в избранное, раз')
-    def favorites_count(self, obj):
-        return obj.favorite_recipes.count()
 
 
 @admin.register(Ingredient)
@@ -120,11 +62,72 @@ class IngredientAdmin(admin.ModelAdmin):
     )
 
 
+class IngredientInline(admin.TabularInline):
+    model = Ingredient.recipes.through
+    extra = 0
+    min_num = 1
+
+
+class RecipeAdminForm(forms.ModelForm):
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+
+
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
+    form = RecipeAdminForm
+    inlines = (
+        IngredientInline,
+    )
+    list_display = (
+        'author',
+        'name',
+        'show_image',
+        'text',
+        'cooking_time',
+        'favorites_count',
+        'ingredients_list',
+        'tags_list',
+    )
+    list_filter = (
+        'author',
+        'name',
+        'tags',
+    )
+    fields = (
+        'author',
+        'name',
+        'image',
+        'text',
+        'cooking_time',
+        'tags',
+    )
+
+    @admin.display(description='Картинка')
+    def show_image(self, obj):
+        return mark_safe(
+            f'<img src={obj.image.url} width="80" height="60">'
+        )
+
+    @admin.display(description='В избранном, раз')
+    def favorites_count(self, obj):
+        return obj.favorites.count()
+
+    @admin.display(description='Ингредиенты')
+    def ingredients_list(self, obj):
+        return list(item.name for item in obj.ingredients.all())
+
+    @admin.display(description='Тэги')
+    def tags_list(self, obj):
+        return list(item.name for item in obj.tags.all())
+
+
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
         'subscriber',
-        'subscription',
+        'author',
     )
 
 
@@ -136,7 +139,7 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(FavoriteRecipe)
+@admin.register(Favorite)
 class FavoriteRecipeAdmin(admin.ModelAdmin):
     list_display = (
         'user',

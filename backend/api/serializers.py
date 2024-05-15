@@ -4,27 +4,27 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+from recipes.models import (Favorite, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Subscription, Tag, User)
 from recipes.validators import (validate_amount, validate_cooking_time,
                                 validate_image)
 from rest_framework import serializers
 
+#
+# class MyUserCreateSerializer(UserCreateSerializer):
+#
+#     class Meta:
+#         model = User
+#         fields = (
+#             'email', 'id', 'username', 'first_name',
+#             'last_name', 'password',
+#         )
+#         extra_kwargs = {
+#             'password': {'write_only': True}
+#         }
 
-class MyUserCreateSerializer(UserCreateSerializer):
 
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name',
-            'last_name', 'password',
-        )
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-
-
-class MyUserSerializer(UserSerializer):
+class FoodgramUserSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
 
@@ -36,13 +36,11 @@ class MyUserSerializer(UserSerializer):
             'last_name', 'is_subscribed',
         )
 
-    def get_is_subscribed(self, user_subscribed_to):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Subscription.objects.filter(
-                subscriber=request.user,
-                subscription=user_subscribed_to
-            ).exists()
+    def get_is_subscribed(self, author):
+        request = self.context['request']
+        if request.user.is_authenticated:
+            return (request.user.subscription_as_subscriber
+                    .filter(author=author).exists())
         return False
 
 
@@ -100,7 +98,7 @@ class IngredientRecipeReadSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
-    author = MyUserSerializer(read_only=True,)
+    author = FoodgramUserSerializer(read_only=True, )
     image = ImageDecodedField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -121,7 +119,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return FavoriteRecipe.objects.filter(
+            return Favorite.objects.filter(
                 user=request.user,
                 recipe=obj
             ).exists()
@@ -224,12 +222,12 @@ class FavoriteRecipeWriteSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = FavoriteRecipe
+        model = Favorite
         fields = '__all__'
         read_only_fields = ('user', 'recipe')
         validators = [
             serializers.UniqueTogetherValidator(
-                queryset=FavoriteRecipe.objects.all(),
+                queryset=Favorite.objects.all(),
                 fields=('user', 'recipe'),
                 message='Этот рецепт уже в избранном.'
             )
@@ -248,32 +246,32 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
     subscriber = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
     )
-    subscription = serializers.PrimaryKeyRelatedField(
+    author = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
     )
 
     class Meta:
 
         model = Subscription
-        fields = ('subscriber', 'subscription')
+        fields = ('subscriber', 'author')
         validators = [
             serializers.UniqueTogetherValidator(
                 queryset=Subscription.objects.all(),
-                fields=('subscriber', 'subscription'),
+                fields=('subscriber', 'author'),
                 message='Эта подписка уже существует.'
             )
         ]
 
-    def validate_subscription(self, user_subscribed_to):
+    def validate_subscription(self, author):
         subscriber = self.context['request'].user
-        if subscriber == user_subscribed_to:
+        if subscriber == author:
             raise serializers.ValidationError(
                 'Нельзя подписаться на самого себя!'
             )
-        return user_subscribed_to
+        return author
 
 
-class SubscribeReadSerializer(MyUserSerializer):
+class SubscribeReadSerializer(FoodgramUserSerializer):
 
     recipes = FavoriteRecipeReadSerializer(
         read_only=True,
@@ -281,16 +279,16 @@ class SubscribeReadSerializer(MyUserSerializer):
     )
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta(MyUserSerializer.Meta):
+    class Meta(FoodgramUserSerializer.Meta):
         model = User
-        fields = MyUserSerializer.Meta.fields + ('recipes', 'recipes_count',)
+        fields = FoodgramUserSerializer.Meta.fields + ('recipes', 'recipes_count',)
 
-    def get_recipes_count(self, user_subscribed_to):
-        return Recipe.objects.filter(author=user_subscribed_to).count()
+    def get_recipes_count(self, author):
+        return Recipe.objects.filter(author=author).count()
 
-    def to_representation(self, user_subscribed_to):
+    def to_representation(self, author):
         """Обрабатывает ?recipes_limit= из url."""
-        result_dict = super().to_representation(user_subscribed_to)
+        result_dict = super().to_representation(author)
         request = self.context.get('request')
         if request.query_params.get('recipes_limit'):
             try:

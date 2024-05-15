@@ -1,3 +1,4 @@
+
 from config import (HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART, URL_PROFILE_PREF,
                     URL_SET_PASSWORD)
 from django.contrib.auth import authenticate
@@ -6,101 +7,43 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipe,
+from djoser import views as djoser_views
+from recipes.models import (Favorite, Ingredient, IngredientRecipe,
                             Recipe, ShoppingCart, Subscription, Tag, User)
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
+from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
 from . import permissions
 from .filters import IngredientSetFilter, RecipeSetFilter
-from .permissions import IsAuthorAdminOrReadOnly
+from .permissions import IsAuthorOrReadCreate
 from .serializers import (FavoriteRecipeReadSerializer,
                           FavoriteRecipeWriteSerializer, IngredientSerializer,
-                          MyUserCreateSerializer, MyUserSerializer,
                           RecipeReadSerializer, RecipeWriteSerializer,
                           ShoppingCartReadSerializer,
                           ShoppingCartWriteSerializer, SubscribeReadSerializer,
                           SubscribeWriteSerializer, TagSerializer)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class FoodgramUserViewSet(djoser_views.UserViewSet):
 
-    queryset = User.objects.all()
-    serializer_class = MyUserSerializer
     http_method_names = ('get', 'post',)
-    permission_classes = (AllowAny,)
     filter_backends = (DjangoFilterBackend,)
 
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return MyUserCreateSerializer
-        return MyUserSerializer
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-    @action(
-        detail=False,
-        methods=('get',),
-        permission_classes=(IsAuthenticated,),
-        url_path=URL_PROFILE_PREF,
-    )
-    def get_users_profile(self, request):
-        return Response(MyUserSerializer(request.user).data)
-
-    @action(
-        detail=False,
-        methods=('post',),
-        permission_classes=(permissions.IsAuthorOrIsAdmin,),
-        url_path=URL_SET_PASSWORD,
-    )
-    def set_password(self, request):
-        current_user = request.user
-        current_password = request.data.get('current_password')
-        new_password = request.data.get('new_password')
-        for field_name in ('current_password', 'new_password'):
-            if request.data.get(field_name) is None:
-                raise ValidationError(
-                    {
-                        f'{field_name}': [
-                            'Обязательное поле.'
-                        ]
-                    }
-                )
-        user = authenticate(
-            username=current_user.email,
-            password=current_password
-        )
-        if user is not None:
-            serializer = MyUserCreateSerializer(
-                user,
-                data={'password': make_password(new_password)},
-                partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(
-                {'message': 'Пароль успешно изменен'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        else:
-            return Response(
-                {'error': 'Неверный текущий пароль'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    def get_permissions(self):
+        if self.action == 'me':
+            return (IsAuthenticated(),)
+        return super().get_permissions()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
 
     http_method_names = HTTP_METHODS
     serializer_class = RecipeReadSerializer
-    permission_classes = (IsAuthorAdminOrReadOnly, )
+    permission_classes = (IsAuthorOrReadCreate,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeSetFilter
 
@@ -173,9 +116,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         lines = []
         lines.append('Список покупок:')
         lines.append('')
-        shopping_carts = request.user.shopping_carts.all()
+        shopping_carts = request.user.shoppingcarts.all()
         recipes = Recipe.objects.filter(
-            shopping_carts__in=shopping_carts
+            shoppingcarts__in=shopping_carts
         )
         ingredients = Ingredient.objects.filter(
             recipes__in=recipes
@@ -286,10 +229,10 @@ class FavoriteRecipeViewSet(
 ):
 
     serializer_class = FavoriteRecipeWriteSerializer
-    queryset = FavoriteRecipe.objects.all()
+    queryset = Favorite.objects.all()
 
     del_error_messsage = 'Этого рецепта нет в избранном.'
-    actions_model = FavoriteRecipe
+    actions_model = Favorite
     read_serializer_class = FavoriteRecipeReadSerializer
 
 
@@ -305,25 +248,25 @@ class SubscribeViewSet(
     pagination_class = None
     lookup_field = 'user_id'
 
-    def get_user_subscribed_to(self):
+    def get_author(self):
         return get_object_or_404(
             User,
             pk=self.kwargs.get('user_id')
         )
 
     def create(self, request, *args, **kwargs):
-        user_subscribed_to = self.get_user_subscribed_to()
+        author = self.get_author()
         serializer = SubscribeWriteSerializer(
             data={
                 'subscriber': request.user.pk,
-                'subscription': user_subscribed_to.pk
+                'author': author.pk
             },
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         serializer = SubscribeReadSerializer(
-            instance=user_subscribed_to,
+            instance=author,
             context={'request': request}
         )
         return Response(
@@ -332,16 +275,16 @@ class SubscribeViewSet(
         )
 
     def destroy(self, request, *args, **kwargs):
-        user_subscribed_to = self.get_user_subscribed_to()
+        author = self.get_author()
         if not Subscription.objects.filter(
                 subscriber=request.user,
-                subscription=user_subscribed_to
+                author=author
         ).exists():
             raise ValidationError('Подписки не существует.')
         self.perform_destroy(
             Subscription.objects.get(
                 subscriber=request.user,
-                subscription=user_subscribed_to
+                author=author
             )
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -363,6 +306,6 @@ class SubscriptionsListViewSet(generics.ListAPIView):
         текущий пользователь.
         """
         subscribed_to_users = User.objects.filter(
-            subscription_subscribed_to__subscriber=self.request.user
+            subscription_as_author=self.request.user
         )
         return subscribed_to_users
