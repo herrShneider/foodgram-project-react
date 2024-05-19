@@ -1,3 +1,0 @@
-email,username,first_name,last_name,password,role
-JaKupala@gmail.com,JaKupala,Janka,Kupala,pbkdf2_sha256$260000$In85udD6CFCaEOZ3p6uMxV$zqrcthIAg6a2WK+ygMgZPhUMjbhfHR+QXRL8IeW8aus=,admin
-JaKolas@gmail.com,JaKolas,Jakub,Kolas,pbkdf2_sha256$260000$EKvuYzxJdxgwF8A1xJ8geX$dI8H5/wbnQlJhgIR4+r5LDyKeevgWBhfP4z2Fq31ZNU=,user

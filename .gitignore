@@ -141,3 +141,11 @@ media/
 .bash_profile
 
 docker-compose.yml
+
+infra/
+
+NocchedReadMe.md
+
+recipes.csv
+users.csv
+import_csv_test.py
