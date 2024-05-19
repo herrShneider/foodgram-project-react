@@ -44,19 +44,22 @@ class Command(BaseCommand):
                     if created:
                         self.stdout.write(
                             self.style.SUCCESS(
-                                f'Запись для модели {model.__name__} добавлена: {row}'
+                                f'Запись для модели {model.__name__} '
+                                f'добавлена: {row}'
                             )
                         )
                     else:
                         self.stdout.write(
                             self.style.WARNING(
-                                f'Запись для модели {model.__name__} уже существует: {row}'
+                                f'Запись для модели {model.__name__} '
+                                f'уже существует: {row}'
                             )
                         )
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(
-                            f'Ошибка при создании объекта {model.__name__}: {e}'
+                            f'Ошибка при создании объекта '
+                            f'{model.__name__}: {e}'
                         )
                     )
                     continue

@@ -165,7 +165,7 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators = (
+        validators=(
             MinValueValidator(
                 1,
                 message='Значение должно быть больше 1'
@@ -205,7 +205,7 @@ class IngredientRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators = (
+        validators=(
             MinValueValidator(
                 1,
                 message='Значение должно быть больше 1'
@@ -229,7 +229,8 @@ class IngredientRecipe(models.Model):
         )
 
     def __str__(self):
-        return f'{self.recipe} {self.ingredient} {self.amount}'[:SLICE_STR_METHOD_LIMIT]
+        return (f'{self.recipe} {self.ingredient} '
+                f'{self.amount}')[:SLICE_STR_METHOD_LIMIT]
 
 
 class FavoriteShoppingCartModel(models.Model):
@@ -247,7 +248,7 @@ class FavoriteShoppingCartModel(models.Model):
 
     class Meta:
         abstract = True
-        default_related_name ='%(class)ss'
+        default_related_name = '%(class)ss'
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
@@ -260,7 +261,6 @@ class FavoriteShoppingCartModel(models.Model):
 
 
 class ShoppingCart(FavoriteShoppingCartModel):
-
 
     class Meta(FavoriteShoppingCartModel.Meta):
         verbose_name = 'Список покупок'

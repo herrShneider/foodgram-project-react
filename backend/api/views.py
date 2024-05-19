@@ -1,6 +1,5 @@
-from django.db.models import Count, Exists, OuterRef, Sum
+from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser import views as djoser_views
 from rest_framework import status, viewsets
@@ -9,20 +8,20 @@ from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
+from api.filters import IngredientSetFilter, RecipeSetFilter
+from api.permissions import IsAuthorOrReadCreate
+from api.serializers import (FavoriteSerializer, IngredientSerializer,
+                             RecipeReadSerializer, RecipeWriteSerializer,
+                             ShoppingCartSerializer, SubscribeReadSerializer,
+                             SubscribeWriteSerializer, TagSerializer)
 from config import HTTP_METHODS, URL_DOWNLOAD_SHOPPING_CART
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Subscription, Tag, User)
 
-from .filters import IngredientSetFilter, RecipeSetFilter
-from .permissions import IsAuthorOrReadCreate
-from .serializers import (FavoriteSerializer, IngredientSerializer,
-                          RecipeReadSerializer, RecipeWriteSerializer,
-                          ShoppingCartSerializer, SubscribeReadSerializer,
-                          SubscribeWriteSerializer, TagSerializer)
-
 
 class FoodgramUserViewSet(djoser_views.UserViewSet):
 
+    queryset = User.objects.all().annotate(recipes_count=Count('recipes'))
     http_method_names = ('get', 'post', 'delete')
     filter_backends = (DjangoFilterBackend,)
 
@@ -40,11 +39,13 @@ class FoodgramUserViewSet(djoser_views.UserViewSet):
     def get_subscriptions(self, request):
         authors = User.objects.filter(
             subscription_as_author__subscriber=request.user
-        ).annotate(recipe_count=Count('recipes'))
-        for author in authors:
-            print(author.first_name, author.recipe_count)
+        ).annotate(recipes_count=Count('recipes'))
         page = self.paginate_queryset(authors)
-        serializer = SubscribeReadSerializer(page, context={'request': request}, many=True)
+        serializer = SubscribeReadSerializer(
+            page,
+            context={'request': request},
+            many=True
+        )
         return self.get_paginated_response(serializer.data)
 
     @action(
@@ -77,12 +78,14 @@ class FoodgramUserViewSet(djoser_views.UserViewSet):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+def is_exists(model, user):
+    if user.is_authenticated:
+        return Exists(model.objects.filter(user=user, recipe=OuterRef('pk')))
+    return Value(False, output_field=BooleanField())
+
+
 class RecipeViewSet(viewsets.ModelViewSet):
 
-    queryset = (Recipe.objects
-                .select_related('author')
-                .prefetch_related('tags', 'ingredients')
-                )
     http_method_names = HTTP_METHODS
     permission_classes = (IsAuthorOrReadCreate,)
     filter_backends = (DjangoFilterBackend,)
@@ -93,15 +96,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    # def get_queryset(self):
-    #     print('def get_queryset(self):')
-    #     queryset = (Recipe.objects
-    #             .select_related('author')
-    #             .prefetch_related('tags', 'ingredients')
-    #             .annotate(is_favorited=Exists(Favorite.objects.filter(user=self.request.user,recipe=OuterRef('pk'))))
-    #             .annotate(is_in_shopping_cart=Exists(ShoppingCart.objects.filter(user=self.request.user,recipe=OuterRef('pk'))))
-    #             )
-    #     return queryset
+    def get_queryset(self):
+        user = self.request.user
+        return (Recipe.objects
+                .select_related('author')
+                .prefetch_related('tags', 'ingredients')
+                .annotate(is_favorited=is_exists(Favorite, user))
+                .annotate(is_in_shopping_cart=is_exists(ShoppingCart, user)))
 
     @action(
         detail=False,
@@ -115,11 +116,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         lines.append('')
         ingredients = (IngredientRecipe.objects
                        .filter(recipe__shoppingcarts__user=request.user)
-                       .values('ingredient__name', 'ingredient__measurement_unit')
+                       .values('ingredient__name',
+                               'ingredient__measurement_unit')
                        .annotate(total_amount=Sum('amount'))
                        .order_by('ingredient__name'))
         for item in ingredients:
-            lines.append(f'{item["ingredient__name"]} - {item["total_amount"]} '
+            lines.append(f'{item["ingredient__name"]} - {item["total_amount"]}'
                          f'{item["ingredient__measurement_unit"]}')
         content = '\n'.join(lines)
         response = HttpResponse(content, content_type="text/plain")

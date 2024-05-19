@@ -43,10 +43,18 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeReadSerializer(serializers.ModelSerializer):
 
-    id = serializers.IntegerField(source='ingredient.id', read_only=True)
-    name = serializers.CharField(source='ingredient.name', read_only=True)
-    measurement_unit = serializers.CharField(source='ingredient.measurement_unit', read_only=True)
-
+    id = serializers.IntegerField(
+        source='ingredient.id',
+        read_only=True
+    )
+    name = serializers.CharField(
+        source='ingredient.name',
+        read_only=True
+    )
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit',
+        read_only=True
+    )
 
     class Meta:
         model = IngredientRecipe
@@ -54,10 +62,25 @@ class IngredientRecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True, read_only=True,)
-    author = FoodgramUserSerializer(read_only=True,)
-    ingredients = IngredientRecipeReadSerializer(source='ingredientsrecipes', many=True, read_only=True)
+    tags = TagSerializer(
+        many=True,
+        read_only=True,
+    )
+    author = FoodgramUserSerializer(
+        read_only=True,
+    )
+    ingredients = IngredientRecipeReadSerializer(
+        source='ingredientsrecipes',
+        many=True,
+        read_only=True
+    )
     image = Base64ImageField()
+    #  Не удалось избавиться от SerializerMethodField потому,
+    #  что RecipeReadSerializer используется в to_representation
+    #  в RecipeWriteSerializer. А там instance передается без
+    #  этих полей. Поэтому в этих методах я тольео проверяю есть
+    #  ли у объекта Recipe поля если есть - вывожу значение, если
+    #  нет - вывожу False.
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -65,24 +88,20 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         model = Recipe
         exclude = ('pub_date',)
 
-    def get_is_favorited(self, recipe):
-        request = self.context['request']
-        if request.user.is_authenticated:
-            return request.user.favorites.filter(recipe=recipe).exists()
-        return False
+    def get_is_favorited(self, obj):
+        return getattr(obj, 'is_favorited', False)
 
-    def get_is_in_shopping_cart(self, recipe):
-        request = self.context['request']
-        if request.user.is_authenticated:
-            return request.user.shoppingcarts.filter(recipe=recipe).exists()
-        return False
+    def get_is_in_shopping_cart(self, obj):
+        return getattr(obj, 'is_in_shopping_cart', False)
 
 
 class IngredientRecipeWriteSerializer(serializers.ModelSerializer):
 
-    id = serializers.IntegerField(source='ingredient.id')
+    id = serializers.IntegerField(
+        source='ingredient.id'
+    )
     amount = serializers.IntegerField(
-        validators = (
+        validators=(
             MinValueValidator(
                 1,
                 message='Значение должно быть больше 1'
@@ -113,7 +132,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         allow_empty_file=False,
     )
     cooking_time = serializers.IntegerField(
-        validators = (
+        validators=(
             MinValueValidator(
                 1,
                 message='Значение должно быть больше 1'
@@ -188,7 +207,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return RecipeReadSerializer(instance, context=self.context).data
 
 
-class RecipeForFavoriteShoppingCartSubscribeSerializer(serializers.ModelSerializer):
+class RecipeForFavoriteShoppingCartSubscribeSerializer(
+    serializers.ModelSerializer
+):
 
     image = Base64ImageField()
 
@@ -284,8 +305,10 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
         return subscription
 
     def to_representation(self, instance):
+        author = instance.author
+        author.recipes_count = Recipe.objects.filter(author=author).count()
         return SubscribeReadSerializer(
-            instance.author,
+            author,
             context=self.context
         ).data
 
@@ -297,7 +320,8 @@ class SubscribeReadSerializer(FoodgramUserSerializer):
 
     class Meta(FoodgramUserSerializer.Meta):
         model = User
-        fields = FoodgramUserSerializer.Meta.fields + ('recipes', 'recipes_count',)
+        fields = (FoodgramUserSerializer.Meta.fields
+                  + 'recipes', 'recipes_count',)
 
     def get_recipes(self, author):
         """Обрабатывает ?recipes_limit= из url."""
@@ -316,6 +340,3 @@ class SubscribeReadSerializer(FoodgramUserSerializer):
             many=True,
             context=self.context
         ).data
-
-    # def get_recipes_count(self, author):
-    #     return Recipe.objects.filter(author=author).count()
