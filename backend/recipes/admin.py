@@ -3,8 +3,8 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
-from .models import (Favorite, Ingredient, Recipe, ShoppingCart,
-                     Subscription, Tag, User)
+from .models import (Favorite, Ingredient, Recipe, ShoppingCart, Subscription,
+                     Tag, User)
 
 admin.site.unregister(Group)
 

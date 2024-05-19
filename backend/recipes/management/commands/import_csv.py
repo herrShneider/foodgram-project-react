@@ -1,74 +1,62 @@
 import csv
 
 from django.core.management.base import BaseCommand
+
 from recipes.models import Ingredient, Tag
 
-csv_files = [
-    'ingredients.csv',
-    'tags.csv',
-]
-
-csv_fields = {
-    'ingredients.csv': ['name', 'measurement_unit'],
-    'tags.csv': ['name', 'color', 'slug'],
+csv_files = {
+    'ingredients.csv': Ingredient,
+    'tags.csv': Tag,
 }
-
-models = {
-    'ingredients': Ingredient,
-    'tags': Tag,
-}
-
-
-def csv_reader_file(csv_file_name):
-    """Функция чтения из файла."""
-    with open(
-        'data_for_test/' + csv_file_name,
-        'r',
-        encoding='utf-8'
-    )as csvfile:
-        csvreader = csv.DictReader(csvfile)
-        return list(csvreader)
 
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """Функция валидации полей и импорта."""
-        for csv_file_name in csv_files:
-            model = csv_file_name.split('.')[0]
-            model_class = models.get(model)
-            for row in csv_reader_file(csv_file_name):
-                if model_class in (Ingredient, Tag):
-                    item = None
-                    if model_class == Ingredient:
-                        item = Ingredient(
-                            name=row['name'],
-                            measurement_unit=row['measurement_unit'],
-                        )
-                    elif model_class == Tag:
-                        item = Tag(
-                            name=row['name'],
-                            color=row['color'],
-                            slug=row['slug'],
+        for csv_file_name, model in csv_files.items():
+            try:
+                with open(
+                        f'data_for_test/{csv_file_name}',
+                        'r',
+                        encoding='utf-8'
+                ) as csvfile:
+                    rows = list(csv.DictReader(csvfile))
+            except FileNotFoundError:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f'Файл {csv_file_name} не найден.'
+                    )
+                )
+                continue
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f'Ошибка при чтении файла {csv_file_name}: {e}'
+                    )
+                )
+                continue
+            for row in rows:
+                try:
+                    item, created = model.objects.get_or_create(**row)
+                    item.full_clean()
+                    item.save()
+                    if created:
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'Запись для модели {model.__name__} добавлена: {row}'
+                            )
                         )
                     else:
                         self.stdout.write(
-                            self.style.ERROR(
-                                f'Не удалось создать запись {model}'
+                            self.style.WARNING(
+                                f'Запись для модели {model.__name__} уже существует: {row}'
                             )
                         )
-                        continue
-                    item.full_clean()
-                    item.save()
-                else:
+                except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(
-                            f'Не удалось создать запись {model}'
+                            f'Ошибка при создании объекта {model.__name__}: {e}'
                         )
                     )
                     continue
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f'Запись для модели {model} добавлена: {row}'
-                    )
-                )

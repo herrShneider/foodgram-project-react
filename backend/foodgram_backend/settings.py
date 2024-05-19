@@ -131,6 +131,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
     'SERIALIZERS': {
+        'current_user': 'api.serializers.FoodgramUserSerializer',
         'user': 'api.serializers.FoodgramUserSerializer',
     },
     'PERMISSIONS': {

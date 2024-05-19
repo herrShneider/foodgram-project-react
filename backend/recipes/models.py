@@ -1,15 +1,14 @@
 from colorfield.fields import ColorField
-
-from config import (EMAIL_FIELD_LENGTH,
-                    FIRST_NAME_LENGTH, LAST_NAME_LENGTH, NAME_MAX_LENGTH,
-                    TAG_COLOR_MAX_LENGTH,
-                    SLICE_STR_METHOD_LIMIT, SLUG_MAX_LENGTH, USERNAME_LENGTH)
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from recipes.validators import (validate_image,
-                                validate_not_me, validate_username_via_regex, validate_hex_color)
+
+from config import (EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH, LAST_NAME_LENGTH,
+                    NAME_MAX_LENGTH, SLICE_STR_METHOD_LIMIT, SLUG_MAX_LENGTH,
+                    TAG_COLOR_MAX_LENGTH, USERNAME_LENGTH)
+from recipes.validators import (validate_image, validate_not_me,
+                                validate_username_via_regex)
 
 
 class User(AbstractUser):
@@ -67,7 +66,7 @@ class Subscription(models.Model):
         verbose_name_plural = 'Подписки'
         constraints = (
             models.UniqueConstraint(
-                fields=('subscriber', 'author'),
+                fields=('subscriber', 'author',),
                 name='Ограничение повторной подписки',
             ),
         )
@@ -166,7 +165,16 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=(MinValueValidator(1), MaxValueValidator(32767)),
+        validators = (
+            MinValueValidator(
+                1,
+                message='Значение должно быть больше 1'
+            ),
+            MaxValueValidator(
+                32767,
+                message='Значение должно быть меньше 32767'
+            ),
+        )
     )
     pub_date = models.DateTimeField(
         verbose_name='Дата публикации',
@@ -197,7 +205,16 @@ class IngredientRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=(MinValueValidator(1), MaxValueValidator(32767))
+        validators = (
+            MinValueValidator(
+                1,
+                message='Значение должно быть больше 1'
+            ),
+            MaxValueValidator(
+                32767,
+                message='Значение должно быть меньше 32767'
+            ),
+        )
     )
 
     class Meta:
@@ -253,5 +270,5 @@ class ShoppingCart(FavoriteShoppingCartModel):
 class Favorite(FavoriteShoppingCartModel):
 
     class Meta(FavoriteShoppingCartModel.Meta):
-        verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'

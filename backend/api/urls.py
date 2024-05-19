@@ -30,28 +30,6 @@ router_v1.register(
 
 
 urlpatterns = [
-    path('users/subscriptions/',
-         views.SubscriptionsListViewSet.as_view(),
-         name='subscribe',
-         ),
     path('', include(router_v1.urls)),
-    path('recipes/<recipe_id>/shopping_cart/',
-         views.ShoppingCartViewSet.as_view(
-             {'post': 'create', 'delete': 'destroy'}
-         ),
-         name='shopping_cart',
-         ),
-    path('recipes/<recipe_id>/favorite/',
-         views.FavoriteRecipeViewSet.as_view(
-             {'post': 'create', 'delete': 'destroy'}
-         ),
-         name='favorite',
-         ),
-    path('users/<user_id>/subscribe/',
-         views.SubscribeViewSet.as_view(
-             {'post': 'create', 'delete': 'destroy'}
-         ),
-         name='subscribe',
-         ),
     path('auth/', include('djoser.urls.authtoken')),
 ]
