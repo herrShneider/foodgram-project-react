@@ -321,7 +321,7 @@ class SubscribeReadSerializer(FoodgramUserSerializer):
     class Meta(FoodgramUserSerializer.Meta):
         model = User
         fields = (FoodgramUserSerializer.Meta.fields
-                  + 'recipes', 'recipes_count',)
+                  + ('recipes', 'recipes_count',))
 
     def get_recipes(self, author):
         """Обрабатывает ?recipes_limit= из url."""
