@@ -71,7 +71,7 @@ class FoodgramUserViewSet(djoser_views.UserViewSet):
             author=id
         )
         if subscription.exists():
-            subscription.first().delete()
+            subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -163,7 +163,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def remove_from_favorite(self, request, pk=None):
         favorite = Favorite.objects.filter(user=request.user, recipe=pk)
         if favorite.exists():
-            favorite.first().delete()
+            favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -183,7 +183,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=pk
         )
         if shopping_cart.exists():
-            shopping_cart.first().delete()
+            shopping_cart.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

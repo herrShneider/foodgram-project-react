@@ -212,14 +212,15 @@ class FavoriteShoppingCartSerializer(serializers.ModelSerializer):
         fields = ('user', 'recipe')
 
     def validate(self, data):
-        if self.Meta.model.objects.filter(
+        model = self.Meta.model
+        if model.objects.filter(
                 user=data['user'],
                 recipe=data['recipe']
         ).exists():
             raise serializers.ValidationError(
                 {
                     'non_field_errors':
-                        f'Уже добавлен в {self.Meta.model._meta.verbose_name}'
+                        f'Уже добавлен в {model._meta.verbose_name}'
                 }
             )
         return data
