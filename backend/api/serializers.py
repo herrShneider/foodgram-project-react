@@ -2,8 +2,8 @@ from django.core.exceptions import ValidationError
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from config import (AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE,
-                    COOK_TIME_MAX_VALUE, COOK_TIME_MIN_VALUE)
+from config import (AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE, COOK_TIME_MAX_VALUE,
+                    COOK_TIME_MIN_VALUE)
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Subscription, Tag, User)
 
