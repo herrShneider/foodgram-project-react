@@ -1,4 +1,4 @@
-from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
+from django.db.models import Count, Exists, OuterRef, Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser import views as djoser_views
@@ -66,22 +66,14 @@ class FoodgramUserViewSet(djoser_views.UserViewSet):
 
     @to_subscribe.mapping.delete
     def to_unsubscribe(self, request, id=None):
-        if Subscription.objects.filter(
-                subscriber=request.user,
-                author=id
-        ).exists():
-            Subscription.objects.get(
-                subscriber=request.user,
-                author=id
-            ).delete()
+        subscription = Subscription.objects.filter(
+            subscriber=request.user,
+            author=id
+        )
+        if subscription.exists():
+            subscription.first().delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
-def is_exists(model, user):
-    if user.is_authenticated:
-        return Exists(model.objects.filter(user=user, recipe=OuterRef('pk')))
-    return Value(False, output_field=BooleanField())
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -98,11 +90,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return (Recipe.objects
-                .select_related('author')
-                .prefetch_related('tags', 'ingredients')
-                .annotate(is_favorited=is_exists(Favorite, user))
-                .annotate(is_in_shopping_cart=is_exists(ShoppingCart, user)))
+        queryset = Recipe.objects.select_related(
+            'author'
+        ).prefetch_related(
+            'tags',
+            'ingredients'
+        )
+        if user.is_authenticated:
+            is_favorited = Favorite.objects.filter(
+                user=user,
+                recipe=OuterRef('pk')
+            )
+            is_in_shopping_cart = ShoppingCart.objects.filter(
+                user=user,
+                recipe=OuterRef('pk')
+            )
+            return queryset.annotate(
+                is_favorited=Exists(is_favorited)
+            ).annotate(
+                is_in_shopping_cart=Exists(is_in_shopping_cart)
+            )
+        return queryset
 
     @action(
         detail=False,
@@ -114,12 +122,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         lines = []
         lines.append('Список покупок:')
         lines.append('')
-        ingredients = (IngredientRecipe.objects
-                       .filter(recipe__shoppingcarts__user=request.user)
-                       .values('ingredient__name',
-                               'ingredient__measurement_unit')
-                       .annotate(total_amount=Sum('amount'))
-                       .order_by('ingredient__name'))
+        ingredients = IngredientRecipe.objects.filter(
+            recipe__shoppingcarts__user=request.user
+        ).values(
+            'ingredient__name',
+            'ingredient__measurement_unit'
+        ).annotate(
+            total_amount=Sum('amount')
+        ).order_by(
+            'ingredient__name'
+        )
         for item in ingredients:
             lines.append(f'{item["ingredient__name"]} - {item["total_amount"]}'
                          f'{item["ingredient__measurement_unit"]}')
@@ -149,8 +161,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @add_to_favorite.mapping.delete
     def remove_from_favorite(self, request, pk=None):
-        if Favorite.objects.filter(user=request.user, recipe=pk).exists():
-            Favorite.objects.get(user=request.user, recipe=pk).delete()
+        favorite = Favorite.objects.filter(user=request.user, recipe=pk)
+        if favorite.exists():
+            favorite.first().delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -165,8 +178,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @add_to_shopping_cart.mapping.delete
     def remove_from_shopping_cart(self, request, pk=None):
-        if ShoppingCart.objects.filter(user=request.user, recipe=pk).exists():
-            ShoppingCart.objects.get(user=request.user, recipe=pk).delete()
+        shopping_cart = ShoppingCart.objects.filter(
+            user=request.user,
+            recipe=pk
+        )
+        if shopping_cart.exists():
+            shopping_cart.first().delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

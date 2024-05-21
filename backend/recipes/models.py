@@ -4,7 +4,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from config import (EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH, LAST_NAME_LENGTH,
+from config import (AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE,
+                    COOK_TIME_MAX_VALUE, COOK_TIME_MIN_VALUE,
+                    EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH, LAST_NAME_LENGTH,
                     NAME_MAX_LENGTH, SLICE_STR_METHOD_LIMIT, SLUG_MAX_LENGTH,
                     TAG_COLOR_MAX_LENGTH, USERNAME_LENGTH)
 from recipes.validators import (validate_image, validate_not_me,
@@ -167,12 +169,12 @@ class Recipe(models.Model):
         verbose_name='Время приготовления',
         validators=(
             MinValueValidator(
-                1,
-                message='Значение должно быть больше 1'
+                COOK_TIME_MIN_VALUE,
+                message=f'Значение должно быть больше {COOK_TIME_MIN_VALUE}'
             ),
             MaxValueValidator(
-                32767,
-                message='Значение должно быть меньше 32767'
+                COOK_TIME_MAX_VALUE,
+                message=f'Значение должно быть меньше {COOK_TIME_MAX_VALUE}'
             ),
         )
     )
@@ -207,12 +209,12 @@ class IngredientRecipe(models.Model):
         verbose_name='Количество',
         validators=(
             MinValueValidator(
-                1,
-                message='Значение должно быть больше 1'
+                AMOUNT_MIN_VALUE,
+                message=f'Значение должно быть больше {AMOUNT_MIN_VALUE}'
             ),
             MaxValueValidator(
-                32767,
-                message='Значение должно быть меньше 32767'
+                AMOUNT_MAX_VALUE,
+                message=f'Значение должно быть меньше {AMOUNT_MAX_VALUE}'
             ),
         )
     )
@@ -233,7 +235,7 @@ class IngredientRecipe(models.Model):
                 f'{self.amount}')[:SLICE_STR_METHOD_LIMIT]
 
 
-class FavoriteShoppingCartModel(models.Model):
+class UserRecipeModel(models.Model):
 
     user = models.ForeignKey(
         User,
@@ -257,18 +259,18 @@ class FavoriteShoppingCartModel(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} {self.recipe}'
+        return f'{self._meta.verbose_name} {self.user} {self.recipe}'
 
 
-class ShoppingCart(FavoriteShoppingCartModel):
+class ShoppingCart(UserRecipeModel):
 
-    class Meta(FavoriteShoppingCartModel.Meta):
+    class Meta(UserRecipeModel.Meta):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 
 
-class Favorite(FavoriteShoppingCartModel):
+class Favorite(UserRecipeModel):
 
-    class Meta(FavoriteShoppingCartModel.Meta):
+    class Meta(UserRecipeModel.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
