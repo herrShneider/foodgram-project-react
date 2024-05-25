@@ -8,8 +8,7 @@ from config import (AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE, COOK_TIME_MAX_VALUE,
                     COOK_TIME_MIN_VALUE, EMAIL_FIELD_LENGTH, FIRST_NAME_LENGTH,
                     LAST_NAME_LENGTH, NAME_MAX_LENGTH, SLICE_STR_METHOD_LIMIT,
                     SLUG_MAX_LENGTH, TAG_COLOR_MAX_LENGTH, USERNAME_LENGTH)
-from recipes.validators import (validate_image, validate_not_me,
-                                validate_username_via_regex)
+from recipes.validators import validate_not_me, validate_username_via_regex
 
 
 class User(AbstractUser):
