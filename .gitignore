@@ -138,13 +138,14 @@ backend/temporary.py
 .media/
 media/
 
+collected_static/
 .bash_profile
 
 docker-compose.yml
 
 infra/
+postman-collection/
 
-NocchedReadMe.md
 
 recipes.csv
 users.csv

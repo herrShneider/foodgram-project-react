@@ -1,6 +1,12 @@
 # foodgram-project-react
 ![foodgram-project-react workflow](https://github.com/herrShneider/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
+  Проект доступен по ссылке:
+  [foodgram-las.hopto.org](https://foodgram-las.hopto.org/) 
+
+  Документация доступна после запуска проекта по ссылке:
+  [foodgram-las.hopto.org/api/docs/](https://foodgram-las.hopto.org/api/docs/) 
+
   Учебный проект сайта, на котором пользователи могут публиковать рецепты, добавлять чужие рецепты в избранное и подписываться на публикации других авторов. Пользователям сайта также доступен сервис «Список покупок». Он позволяет создавать список продуктов, которые нужно купить для приготовления выбранных блюд.. Целью проекта является закрепление знаний в области разработки API веб приложений на Django Rest Framework, запуска проектов в контейнерах, настройки автоматического тестирования и деплоя на удалённый сервер.
 Автоматизация настроена с помощью сервиса GitHub Actions.
 При пуше в ветку main:
@@ -55,9 +61,6 @@ sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/col
 ```
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py import_csv
 ```
-
-
-В папке docs находятся файлы спецификации API. 
 
 
 Авторы: 

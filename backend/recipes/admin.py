@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
@@ -12,7 +13,7 @@ admin.site.empty_value_display = 'Не задано'
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     list_display = (
         'email',
         'id',
@@ -25,12 +26,6 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = (
         'email',
         'username',
-    )
-    fields = (
-        'email',
-        'username',
-        'first_name',
-        'last_name',
     )
 
     @admin.display(description='Кол-во рецептов')

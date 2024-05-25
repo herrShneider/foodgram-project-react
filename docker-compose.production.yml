@@ -4,6 +4,7 @@ volumes:
   pg_data:
   static:
   media:
+  frontend_static:
 
 services:
   db:
@@ -30,11 +31,14 @@ services:
     env_file: .env
     command: cp -r /app/build/. /frontend_static/
     volumes:
-      - static:/frontend_static
+      - frontend_static:/frontend_static
   gateway:
     image: ezhik415/foodgram_gateway
     env_file: .env
     volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - frontend_static:/usr/share/nginx/html/
+      - ./docs/:/usr/share/nginx/html/api/docs/
       - static:/staticfiles
       - media:/media
     ports:

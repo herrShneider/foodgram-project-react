@@ -131,29 +131,30 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         exclude = ('pub_date',)
         read_only_fields = ('author',)
 
-    def validate(self, data):
-        ingredients = data.get('ingredients')
+    def validate_ingredients(self, ingredients):
         if not ingredients:
             raise ValidationError(
-                {'ingredients': 'Поле ingredients не может быть пустым.'}
+                'Поле ingredients не может быть пустым.'
             )
         ingredients_ids = [item['id'].id for item in ingredients]
         unique_ingredients_ids = set(ingredients_ids)
         if len(unique_ingredients_ids) < len(ingredients_ids):
             raise ValidationError(
-                {'ingredients': 'Вы передали один из тегов дважды.'}
+                'Вы передали один из ингредиентов дважды.'
             )
-        tags = data.get('tags')
+        return ingredients
+
+    def validate_tags(self, tags):
         if not tags:
             raise ValidationError(
-                {'tags': 'Поле tags не может быть пустым.'}
+                'Поле tags не может быть пустым.'
             )
         unique_tags = set(tags)
         if len(unique_tags) < len(tags):
             raise ValidationError(
-                {'tags': 'Вы передали один из тегов дважды.'}
+                'Вы передали один из тегов дважды.'
             )
-        return data
+        return tags
 
     @staticmethod
     def create_ingredient_recipe_object(ingredients_data, recipe):
@@ -250,19 +251,20 @@ class SubscribeWriteSerializer(serializers.ModelSerializer):
 
         model = Subscription
         fields = ('subscriber', 'author')
-        validators = (
-            serializers.UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=('subscriber', 'author'),
-                message='Эта подписка уже существует.'
-            ),
-        )
 
     def validate(self, data):
         subscriber = self.context['request'].user
-        if subscriber == data['author']:
+        author = data['author']
+        if subscriber == author:
             raise serializers.ValidationError(
                 {'non_field_errors': 'Нельзя подписаться на самого себя!'}
+            )
+        if Subscription.objects.filter(
+                subscriber=subscriber,
+                author=author
+        ).exists():
+            raise serializers.ValidationError(
+                {'non_field_errors': 'Эта подписка уже существует.'}
             )
         return data
 

@@ -65,12 +65,6 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('subscriber', 'author',),
-                name='Ограничение повторной подписки',
-            ),
-        )
 
     def __str__(self):
         return f'{self.subscriber} подписан на {self.author}'
@@ -78,6 +72,11 @@ class Subscription(models.Model):
     def clean(self):
         if self.subscriber == self.author:
             raise ValidationError('Нельзя подписаться на самого себя.')
+        if Subscription.objects.filter(
+                subscriber=self.subscriber,
+                author=self.author
+        ).exists():
+            raise ValidationError('Эта подписка уже существует.')
         return super().save(self)
 
 
@@ -159,7 +158,6 @@ class Recipe(models.Model):
         verbose_name='Картинка',
         upload_to='recipes/images/',
         default=None,
-        validators=(validate_image,)
     )
     text = models.TextField(
         verbose_name='Описание',
